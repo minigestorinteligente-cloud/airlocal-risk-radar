@@ -1,0 +1,28 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@theme inline {
+  /* Negro neutro profundo, nada de azul */
+  --color-background: #080808; 
+  --color-foreground: #eeeeee;
+  
+  /* Gris carbón neutro para las cajas */
+  --color-card: #141414; 
+  --color-card-foreground: #ffffff;
+  
+  --color-primary: #10b981;
+  --color-border: rgba(255, 255, 255, 0.05);
+}
+
+:root {
+  --background: #080808;
+  --foreground: #eeeeee;
+  --card: #141414;
+  --primary: #10b981;
+}
+
+body {
+  background-color: #080808;
+  color: #eeeeee;
+}
