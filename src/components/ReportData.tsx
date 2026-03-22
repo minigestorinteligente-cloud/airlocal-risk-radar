@@ -127,6 +127,11 @@ export default async function ReportData({ email }: { email?: string }) {
     : netUtilityRaw;
   const marginOfSafetyNum = parseInt(String(marginOfSafetyStr).replace(/[^\d.-]/g, '')) || 0;
   
+  // --- Validation Layer Logic ---
+  const isInconsistentOccupancy = occNum > totalNights;
+  const adr = occNum > 0 ? revNum / occNum : 0;
+  const isAtypicalADR = occNum > 0 && (adr < 15 || adr > 2000);
+  const isHighExpenses = revNum > 0 && opCostNum > revNum * 2;
 
   // Barras de progreso usan hex puro en inline-style para máxima opacidad y densidad
   const operativGasColorHex = getRiskBgColorHex(riskLevelRaw);
@@ -159,10 +164,22 @@ export default async function ReportData({ email }: { email?: string }) {
         </div>
         
         <div className="bg-[#121318] border border-zinc-800 rounded-[12px] p-5 flex flex-col justify-between h-[130px]">
-          <div className="flex items-center gap-2 text-zinc-500 text-[11px] font-bold tracking-wider mb-2">
-            <CalendarDays className="w-3.5 h-3.5" /> Ocupación
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2 text-zinc-500 text-[11px] font-bold tracking-wider">
+              <CalendarDays className="w-3.5 h-3.5" /> Ocupación
+            </div>
+            {isInconsistentOccupancy && (
+              <span title="Datos de ocupación inconsistentes" className="text-amber-500">🚩</span>
+            )}
           </div>
-          <div className="text-[13px] font-medium text-zinc-200 leading-tight mt-auto">{occupancyStr}</div>
+          <div className="text-[13px] font-medium text-zinc-200 leading-tight mt-auto">
+            {occupancyStr}
+            {isInconsistentOccupancy && (
+              <div className="mt-1 flex items-center gap-1.5 px-2 py-0.5 bg-amber-500/10 border border-amber-500/20 rounded text-[9px] font-bold text-amber-500 uppercase tracking-tight">
+                ⚠️ Datos inconsistentes
+              </div>
+            )}
+          </div>
         </div>
         
         <div className="bg-[#121318] border border-zinc-800 rounded-[12px] p-5 flex flex-col justify-between h-[130px]">
@@ -223,12 +240,20 @@ export default async function ReportData({ email }: { email?: string }) {
             <div className="text-[11px] text-zinc-500 font-bold tracking-wider flex items-center gap-2">
               <DollarSign className="w-4 h-4" /> 
               Ingreso Medio / Noche
+              {isAtypicalADR && <span title="Tarifa diaria atípica detectada" className="text-amber-500">🚩</span>}
             </div>
             <InfoTooltip content="El dinero neto proyectado que queda en tu cuenta tras descontar comisiones de plataforma y todos los gastos operativos." />
           </div>
           <div className="mt-auto">
             <AnimatedNumber value={adrNum} prefix="$" className="text-4xl md:text-5xl font-black text-white tracking-tighter" duration={1300} />
-            <div className="text-[11px] font-medium text-zinc-600 uppercase tracking-widest mt-1">USD</div>
+            <div className="text-[11px] font-medium text-zinc-600 uppercase tracking-widest mt-1 flex flex-col gap-1">
+              <span>USD</span>
+              {isAtypicalADR && (
+                <div className="flex items-center gap-1.5 px-2 py-0.5 bg-amber-500/10 border border-amber-500/20 rounded text-[9px] font-bold text-amber-500 uppercase tracking-tight w-fit">
+                  🚩 Tarifa atípica detectada
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -288,11 +313,22 @@ export default async function ReportData({ email }: { email?: string }) {
 
         <div className="bg-[#121318] border border-zinc-800 p-6 rounded-[12px] flex flex-col justify-between h-[130px]">
            <div className="text-[11px] text-zinc-500 font-bold tracking-widest mb-1 flex justify-between items-center">
-             <span>Costos Operativos</span>
+             <span className="flex items-center gap-2">
+               Costos Operativos
+               {isHighExpenses && <span title="Gastos inusualmente altos" className="text-amber-500">🚩</span>}
+             </span>
              <InfoTooltip content="Suma total de gastos: limpieza, consumibles, servicios e impuestos o cuotas asociadas al mes." />
            </div>
             <div className="text-4xl md:text-5xl font-black text-white tracking-tighter mt-auto">
-              <AnimatedNumber value={opCostNum} prefix="$" duration={1400} /> <span className="text-[13px] text-zinc-600 font-normal">USD</span>
+              <div className="flex items-baseline gap-2">
+                <AnimatedNumber value={opCostNum} prefix="$" duration={1400} /> 
+                <span className="text-[13px] text-zinc-600 font-normal">USD</span>
+              </div>
+              {isHighExpenses && (
+                <div className="mt-1 flex items-center gap-1.5 px-2 py-0.5 bg-amber-500/10 border border-amber-500/20 rounded text-[9px] font-bold text-amber-500 uppercase tracking-tight w-fit">
+                  ⚠️ Gastos inusualmente altos, por favor verificar
+                </div>
+              )}
             </div>
         </div>
       </div>
