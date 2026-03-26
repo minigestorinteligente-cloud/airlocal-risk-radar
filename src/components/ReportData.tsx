@@ -49,7 +49,7 @@ export default async function ReportData({ email }: { email?: string }) {
   const propertyName = propertyNameRaw || "tu inmueble";
   const capacity = summary.capacity || "N/A";
   const occupancyStr = summary.activity || "0";
-  const revenueStr = summary.gross_income || "0";
+  const revenueStr = report.profit || summary.gross_income || "0";
   const cleanAuditoriaTitle = free.headline || "";
   const city = summary.city || "tu ciudad";
   const introText = `Analizamos tu inmueble "${propertyName}" en ${city}. ${free.intro || ""}`;
@@ -59,11 +59,11 @@ export default async function ReportData({ email }: { email?: string }) {
   const netIncomeStr = metrics.net_income || "0";
   const expenseRatio = metrics.expense_ratio !== undefined ? metrics.expense_ratio : "0"; 
 
-  const savingsOpportunityStr = premium.savings_opportunity || "0";
+  const savingsOpportunityStr = report.perdida_potencial || premium.savings_opportunity || "0";
   const hookText = premium.hook_text || "";
   const premiumCTA = meta.premium_cta || "REVELAR PLAN DE ACCIÓN";
 
-  const riskLevelRaw = (free.risk_level || "MEDIUM").toUpperCase();
+  const riskLevelRaw = (report.riesgo || free.risk_level || "MEDIUM").toUpperCase();
 
   const getRiskBgColorHex = (risk: string) => {
     if (risk === 'HIGH') return '#FF2D2D'; // Intense Technical Red (vibrant clone)

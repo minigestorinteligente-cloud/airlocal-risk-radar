@@ -20,7 +20,7 @@ export default async function QuickResultPage({ searchParams }: Props) {
   return (
     <main className="min-h-screen bg-[#0B0C10] font-sans tracking-wide text-zinc-100">
       <Suspense fallback={<LoadingSkeleton />}>
-        <QuickResult email={emailParam} />
+        <QuickResult />
       </Suspense>
     </main>
   );
