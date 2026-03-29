@@ -17,7 +17,7 @@ export default function QuickResult() {
   const searchParams = useSearchParams();
   const emailFromUrl = searchParams.get('email');
 
-  console.log('Versión del código: 2.0');
+  console.log('Versión del código: 2.2 (Fix JSON Mapping)');
   console.log('Rendering QuickResult component. Email from URL:', emailFromUrl);
 
   useEffect(() => {
@@ -52,7 +52,23 @@ export default function QuickResult() {
         } else if (!data) {
           setError('No encontramos datos para este correo');
         } else {
-          setReport(data);
+          // Force JSON read right at setReport to guarantee React updates
+          let parsedObj = { ...data };
+          try {
+            if (parsedObj.report_data) {
+              let raw = parsedObj.report_data;
+              if (typeof raw === 'string') raw = JSON.parse(raw);
+              if (typeof raw === 'string') raw = JSON.parse(raw);
+              if (raw && raw.report_data && !raw.free) {
+                raw = raw.report_data;
+              }
+              parsedObj.report_data = raw;
+              console.log('DEBUG effect: report_data forcefully parsed:', raw);
+            }
+          } catch (e) {
+            console.error('DEBUG effect: Error parsing report_data:', e);
+          }
+          setReport(parsedObj);
         }
       } catch (err: any) {
         console.error('Fatal Catch inside useEffect:', err);
@@ -99,47 +115,60 @@ export default function QuickResult() {
     );
   }
 
-  const isQuick = report?.tipo_reporte === 'quick';
-  const rData = report?.report_data || {};
-  const free = rData?.free || {};
-  const metrics = free?.metrics || {};
-  const summary = free?.user_summary || {};
-  const premium = rData?.premium || {};
-
-  let riskLevel = 'MEDIUM';
-  let rawRev = 0;
-  let occupationPct = 0;
-  let breakEvenNoches = 0;
-  let lossPotential = 0;
-
-  if (isQuick) {
-    // Quick Logic: Use individual columns, ignore report_data completely
-    riskLevel = (report?.riesgo || 'MEDIUM').toString().toUpperCase();
-    rawRev = Number(report?.profit) || 0;
-    // Strictly ignore report_data (summary.activity) for quick reports
-    occupationPct = Number(report?.ocupacion) || 0;
-    breakEvenNoches = Number(report?.break_even_noches) || 0;
-    lossPotential = Number(report?.perdida_potencial) || 0;
-  } else {
-    // Premium/Original Logic: Keep existing reading from report_data with mandatory protection
-    riskLevel = (free?.risk_level || 'MEDIUM').toString().toUpperCase();
-    rawRev = parseInt(String(summary?.gross_income || '0').replace(/[^\d]/g, '')) || 0;
-    occupationPct = metrics?.occupancy_rate || (parseInt(String(summary?.activity || '0').replace(/[^\d]/g, '')) / 30 * 100) || 0;
-    breakEvenNoches = parseInt(String(metrics?.break_even_nights || '0').replace(/[^\d]/g, '')) || 0;
-    lossPotential = parseInt(String(premium?.savings_opportunity || '0').replace(/[^\d]/g, '')) || 0;
+  // Parse report_data with extra robustness
+  let rData: any = {};
+  try {
+    let raw = report?.report_data;
+    if (typeof raw === 'string') raw = JSON.parse(raw);
+    if (typeof raw === 'string') raw = JSON.parse(raw);
+    rData = raw || {};
+    if (rData.report_data && !rData.free) {
+      rData = rData.report_data;
+    }
+    console.log('DEBUG render: report_data final parsed:', rData);
+  } catch (e) {
+    console.error('DEBUG render: Failed to parse report_data:', e);
   }
 
+  const free = rData?.free || {};
+  const metrics = free?.metrics || {};
+
+  // Data Mapping (Strict Exclusive JSON per user instruction + safe paths)
+  // 1. Semáforo: Only from report_data.free.risk_level
+  const riskRaw = (free?.risk_level || report?.riesgo || 'MEDIUM').toString().toLowerCase();
+  const riskLevel = riskRaw.includes('low') || riskRaw.includes('bajo') ? 'LOW' : riskRaw.includes('medio') || riskRaw.includes('medium') ? 'MEDIUM' : 'HIGH';
+  
+  // 2. Ocupación %: Only from report_data.free.metrics.ocupacion_pct
+  const occupationPct = Number(metrics?.ocupacion_pct || metrics?.occupancy_pct || metrics?.ocupacion || 0);
+  
+  // 3. Ingreso Mensual (Neto): Only from report_data.free.metrics.net_income
+  const rawRev = Number(metrics?.net_income || report?.profit || 0);
+  
+  // 4. Pérdida/Ganancia: Only from report_data.free.metrics.net_income
+  const lossPotential = Math.abs(Number(metrics?.net_income || report?.profit || 0));
+  const breakEvenNoches = Number(metrics?.break_even_nights || 0);
+
+  // Dynamic Texts from JSON
+  const headline = free?.headline || '';
+  const intro = free?.intro || '';
+
   // Narrative Content Mapping with extra safety
-  const getRiskNarrative = () => {
+  const getRiskNarrative = (currentAccentText: string) => {
     try {
-      if (riskLevel === 'ALTO' || riskLevel === 'HIGH') {
+      if (riskLevel === 'HIGH') {
         return {
           label: 'RIESGO: ALTO',
-          title: 'AUDITORÍA: MARGEN EN PÉRDIDA',
-          desc: 'Tu operación actual no está logrando cubrir sus costos de manera consistente. Existe un riesgo real de pérdida si no se ajusta tu estrategia de precios o estructura de gastos.',
-          nightsBox: <div className="text-zinc-200">Tu operación está por debajo del punto de equilibrio.</div>,
+          title: headline || 'AUDITORÍA: MARGEN EN PÉRDIDA',
+          desc: intro || 'Tu operación actual no está logrando cubrir sus costos de manera consistente.',
+          nightsBox: (
+            <div className="flex flex-col">
+              <div className="text-zinc-200">
+                Tu operación está en <span className="text-red-500 font-bold">PÉRDIDA</span>
+              </div>
+            </div>
+          ),
           impactLabel: 'Impacto Económico',
-          impactText: `Estás perdiendo hasta <span className="text-red-500">$${(lossPotential || 0).toLocaleString()} mensuales</span> bajo tu configuración actual.`,
+          impactText: `Estás perdiendo hasta <span className="text-red-500 font-bold">$${(lossPotential || 0).toLocaleString()} mensuales</span>`,
           indicatorText: 'Tus ingresos actuales no están cubriendo la estructura de costos. Se requiere ajuste inmediato.',
           accentColor: '#FF2D2D',
           accentText: 'text-[#FF2D2D]',
@@ -147,18 +176,23 @@ export default function QuickResult() {
           icon: AlertTriangle
         };
       }
-      if (riskLevel === 'MEDIO' || riskLevel === 'MEDIUM') {
+      if (riskLevel === 'MEDIUM') {
         return {
           label: 'RIESGO: MEDIO',
-          title: 'AUDITORÍA: MARGEN OPERATIVO EN RIESGO',
-          desc: 'Tu estructura de ingresos y gastos indica una operación vulnerable. Podrías estar perdiendo rentabilidad sin notarlo debido a un margen ajustado entre ingresos y costos.',
+          title: headline || 'AUDITORÍA: MARGEN OPERATIVO EN RIESGO',
+          desc: intro || 'Tu estructura de ingresos y gastos indica una operación vulnerable.',
           nightsBox: (
-            <div className="text-zinc-200">
-              Estás a <AnimatedNumber value={breakEvenNoches || 0} className="text-[#FFB800]" /> noches de entrar en pérdida
+            <div className="flex flex-col">
+              <div className="text-zinc-200">
+                Estás a <AnimatedNumber value={breakEvenNoches} className="text-[#FFB800] font-bold" /> noches
+              </div>
+              <div className="text-zinc-500 text-[10px] uppercase font-bold tracking-widest mt-1">
+                DE ENTRAR EN PÉRDIDA
+              </div>
             </div>
           ),
           impactLabel: 'Impacto Económico',
-          impactText: `Podrías estar dejando de ganar hasta <span className="text-red-500">$${(lossPotential || 0).toLocaleString()} USD</span> al mes bajo tu estructura actual.`,
+          impactText: `Podrías estar perdiendo hasta <span className="text-red-500 font-bold">$${(lossPotential || 0).toLocaleString()} USD</span> al mes`,
           indicatorText: 'Tu nivel de gastos está por encima del rango saludable para tu ocupación actual.',
           accentColor: '#FFB800',
           accentText: 'text-[#FFB800]',
@@ -169,16 +203,21 @@ export default function QuickResult() {
       // Default: BAJO / LOW
       return {
         label: 'ESTADO: BAJO',
-        title: 'AUDITORÍA: OPERACIÓN ESTABLE, PERO NO MAXIMIZADA',
-        desc: 'Tu estructura de ingresos y gastos indica una operación saludable y controlada. Actualmente estás cubriendo tus costos con seguridad, pero aún existe margen para mejorar tu rentabilidad.',
+        title: headline || 'AUDITORÍA: OPERACIÓN ESTABLE',
+        desc: intro || 'Tu estructura de ingresos y gastos indica una operación saludable y controlada.',
         nightsBox: (
-          <div className="text-zinc-200">
-            Tu operación tiene un margen de seguridad de <AnimatedNumber value={breakEvenNoches || 0} className="text-[#10b981]" /> noches
+          <div className="flex flex-col">
+            <div className="text-zinc-200">
+              Operación con <AnimatedNumber value={breakEvenNoches} className="text-[#10b981] font-bold" /> noches
+            </div>
+            <div className="text-zinc-500 text-[10px] uppercase font-bold tracking-widest mt-1">
+              DE MARGEN DE SEGURIDAD
+            </div>
           </div>
         ),
         impactLabel: 'Potencial de Mejora',
-        impactText: `Podrías aumentar tus ingresos hasta <span className="text-[#10b981]">$${(rawRev || 0).toLocaleString()} USD</span> optimizando tu estrategia actual.`,
-        indicatorText: 'Tu nivel de ocupación y ADR están en un punto óptimo. Mantén el control de costos para maximizar el excedente.',
+        impactText: `Podrías aumentar tus ganancias en <span className="text-[#10b981] font-bold">$${(lossPotential || 0).toLocaleString()} USD</span> mensuales`,
+        indicatorText: 'Tu nivel de ocupación y ADR están en un punto óptimo. Mantén el control de costos.',
         accentColor: '#10b981',
         accentText: 'text-[#10b981]',
         glowColor: 'rgba(16, 185, 129, 0.4)',
@@ -189,7 +228,7 @@ export default function QuickResult() {
       return {
         label: 'ESTADO: INDETERMINADO',
         title: 'FALLO EN EL ANÁLISIS DE DATOS',
-        desc: 'Hubo un error al procesar tu reporte. Por favor, contacta a soporte.',
+        desc: 'Hubo un error al procesar tu reporte.',
         nightsBox: <div>Error al calcular métricas.</div>,
         impactLabel: 'Error',
         impactText: 'No se pudo calcular el impacto.',
@@ -202,7 +241,7 @@ export default function QuickResult() {
     }
   };
 
-  const narrative = getRiskNarrative();
+  const narrative = getRiskNarrative(''); 
   const glowColor = narrative.glowColor;
   const accentColor = narrative.accentColor;
   const accentText = narrative.accentText;
@@ -224,16 +263,16 @@ export default function QuickResult() {
       <div className="grid grid-cols-2 gap-3 w-full mb-6">
         <div className="bg-[#121318] border border-zinc-800 rounded-[12px] p-5 flex flex-col justify-between h-[110px]">
           <div className="text-zinc-500 text-[10px] font-bold tracking-widest uppercase mb-2">Ocupación</div>
-          <div className="text-xl font-bold text-white">
+          <div className="text-xl font-black text-white">
             <AnimatedNumber value={Math.round(occupationPct)} suffix="%" />
           </div>
         </div>
         <div className="bg-[#121318] border border-zinc-800 rounded-[12px] p-5 flex flex-col justify-between h-[110px]">
           <div className="text-zinc-500 text-[10px] font-bold tracking-widest uppercase mb-2">Ingreso mensual</div>
-          <div className="text-xl font-bold text-white flex items-baseline gap-1">
-            <span className="text-sm font-medium text-zinc-500">$</span>
+          <div className="text-xl font-black text-white flex items-baseline gap-1">
+            <span className="text-sm font-bold text-zinc-500">$</span>
             <AnimatedNumber value={rawRev} />
-            <span className="text-[10px] text-zinc-500 ml-1">USD</span>
+            <span className="text-[10px] uppercase font-bold text-zinc-500 ml-1 tracking-tighter">USD</span>
           </div>
         </div>
       </div>
@@ -267,7 +306,7 @@ export default function QuickResult() {
 
           <div className="pt-6 border-t border-zinc-800/50">
             <div className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-2 flex items-center gap-2">
-              <TrendingUp className={`w-3 h-3 ${riskLevel === 'BAJO' || riskLevel === 'LOW' ? 'text-emerald-500' : 'text-red-500'}`} /> {narrative.impactLabel}
+              <TrendingUp className={`w-3 h-3 ${riskLevel === 'LOW' ? 'text-emerald-500' : 'text-red-500'}`} /> {narrative.impactLabel}
             </div>
             <div className="text-xl font-black text-white" dangerouslySetInnerHTML={{ __html: narrative.impactText }}>
             </div>
