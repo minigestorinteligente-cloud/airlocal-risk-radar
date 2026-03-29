@@ -17,7 +17,7 @@ export default function QuickResult() {
   const searchParams = useSearchParams();
   const emailFromUrl = searchParams.get('email');
 
-  console.log('Versión del código: 2.3 (Styling Update)');
+  console.log('Versión del código: 2.4 (Impact Color Update)');
   console.log('Rendering QuickResult component. Email from URL:', emailFromUrl);
 
   useEffect(() => {
@@ -168,7 +168,7 @@ export default function QuickResult() {
             </div>
           ),
           impactLabel: 'Impacto Económico',
-          impactText: `Estás perdiendo hasta $${(lossPotential || 0).toLocaleString()} mensuales`,
+          impactText: `Estás perdiendo hasta <span class="text-[#FF2D2D]">$${(lossPotential || 0).toLocaleString()}</span> mensuales`,
           indicatorText: 'Tus ingresos actuales no están cubriendo la estructura de costos. Se requiere ajuste inmediato.',
           accentColor: '#FF2D2D',
           accentText: 'text-[#FF2D2D]',
@@ -192,7 +192,7 @@ export default function QuickResult() {
             </div>
           ),
           impactLabel: 'Impacto Económico',
-          impactText: `Podrías estar perdiendo hasta $${(lossPotential || 0).toLocaleString()} USD al mes`,
+          impactText: `Podrías estar perdiendo hasta <span class="text-[#FFB800]">$${(lossPotential || 0).toLocaleString()} USD</span> al mes`,
           indicatorText: 'Tu nivel de gastos está por encima del rango saludable para tu ocupación actual.',
           accentColor: '#FFB800',
           accentText: 'text-[#FFB800]',
@@ -216,7 +216,7 @@ export default function QuickResult() {
           </div>
         ),
         impactLabel: 'Potencial de Mejora',
-        impactText: `Podrías aumentar tus ganancias en $${(lossPotential || 0).toLocaleString()} USD mensuales`,
+        impactText: `Podrías aumentar tus ganancias en <span class="text-[#10b981]">$${(lossPotential || 0).toLocaleString()} USD</span> mensuales`,
         indicatorText: 'Tu nivel de ocupación y ADR están en un punto óptimo. Mantén el control de costos.',
         accentColor: '#10b981',
         accentText: 'text-[#10b981]',
@@ -322,7 +322,7 @@ export default function QuickResult() {
             <div className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-2 flex items-center gap-2">
               <TrendingUp className={`w-3 h-3 ${riskLevel === 'LOW' ? 'text-emerald-500' : 'text-red-500'}`} /> {narrative.impactLabel}
             </div>
-            <div className={`text-xl font-black ${accentText}`} dangerouslySetInnerHTML={{ __html: narrative.impactText }}>
+            <div className="text-xl font-black text-white" dangerouslySetInnerHTML={{ __html: narrative.impactText }}>
             </div>
           </div>
         </div>
