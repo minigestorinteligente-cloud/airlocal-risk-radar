@@ -17,7 +17,7 @@ export default function QuickResult() {
   const searchParams = useSearchParams();
   const emailFromUrl = searchParams.get('email');
 
-  console.log('Versión del código: 2.2 (Fix JSON Mapping)');
+  console.log('Versión del código: 2.3 (Styling Update)');
   console.log('Rendering QuickResult component. Email from URL:', emailFromUrl);
 
   useEffect(() => {
@@ -162,13 +162,13 @@ export default function QuickResult() {
           desc: intro || 'Tu operación actual no está logrando cubrir sus costos de manera consistente.',
           nightsBox: (
             <div className="flex flex-col">
-              <div className="text-zinc-200">
-                Tu operación está en <span className="text-red-500 font-bold">PÉRDIDA</span>
+              <div className="text-white text-[28px] leading-tight font-black tracking-tight">
+                Tu operación está en <span className="text-[#FF2D2D]">PÉRDIDA</span>
               </div>
             </div>
           ),
           impactLabel: 'Impacto Económico',
-          impactText: `Estás perdiendo hasta <span className="text-red-500 font-bold">$${(lossPotential || 0).toLocaleString()} mensuales</span>`,
+          impactText: `Estás perdiendo hasta $${(lossPotential || 0).toLocaleString()} mensuales`,
           indicatorText: 'Tus ingresos actuales no están cubriendo la estructura de costos. Se requiere ajuste inmediato.',
           accentColor: '#FF2D2D',
           accentText: 'text-[#FF2D2D]',
@@ -183,16 +183,16 @@ export default function QuickResult() {
           desc: intro || 'Tu estructura de ingresos y gastos indica una operación vulnerable.',
           nightsBox: (
             <div className="flex flex-col">
-              <div className="text-zinc-200">
-                Estás a <AnimatedNumber value={breakEvenNoches} className="text-[#FFB800] font-bold" /> noches
+              <div className="text-white text-[28px] leading-tight font-black tracking-tight mb-1">
+                Estás a <AnimatedNumber value={breakEvenNoches} className="text-[#FFB800]" /> noches
               </div>
-              <div className="text-zinc-500 text-[10px] uppercase font-bold tracking-widest mt-1">
+              <div className="text-zinc-500 text-[11px] uppercase font-bold tracking-widest mt-1">
                 DE ENTRAR EN PÉRDIDA
               </div>
             </div>
           ),
           impactLabel: 'Impacto Económico',
-          impactText: `Podrías estar perdiendo hasta <span className="text-red-500 font-bold">$${(lossPotential || 0).toLocaleString()} USD</span> al mes`,
+          impactText: `Podrías estar perdiendo hasta $${(lossPotential || 0).toLocaleString()} USD al mes`,
           indicatorText: 'Tu nivel de gastos está por encima del rango saludable para tu ocupación actual.',
           accentColor: '#FFB800',
           accentText: 'text-[#FFB800]',
@@ -207,16 +207,16 @@ export default function QuickResult() {
         desc: intro || 'Tu estructura de ingresos y gastos indica una operación saludable y controlada.',
         nightsBox: (
           <div className="flex flex-col">
-            <div className="text-zinc-200">
-              Operación con <AnimatedNumber value={breakEvenNoches} className="text-[#10b981] font-bold" /> noches
+            <div className="text-white text-3xl font-black tracking-tight">
+              Operación con <AnimatedNumber value={breakEvenNoches} className="text-[#10b981]" /> noches
             </div>
-            <div className="text-zinc-500 text-[10px] uppercase font-bold tracking-widest mt-1">
+            <div className="text-zinc-500 text-[11px] uppercase font-bold tracking-widest mt-1">
               DE MARGEN DE SEGURIDAD
             </div>
           </div>
         ),
         impactLabel: 'Potencial de Mejora',
-        impactText: `Podrías aumentar tus ganancias en <span className="text-[#10b981] font-bold">$${(lossPotential || 0).toLocaleString()} USD</span> mensuales`,
+        impactText: `Podrías aumentar tus ganancias en $${(lossPotential || 0).toLocaleString()} USD mensuales`,
         indicatorText: 'Tu nivel de ocupación y ADR están en un punto óptimo. Mantén el control de costos.',
         accentColor: '#10b981',
         accentText: 'text-[#10b981]',
@@ -246,6 +246,20 @@ export default function QuickResult() {
   const accentColor = narrative.accentColor;
   const accentText = narrative.accentText;
   const AuditIcon = narrative.icon;
+
+  const renderTitle = (titleRaw: string) => {
+    const defaultPrefix = 'AUDITORÍA:';
+    if (titleRaw.toUpperCase().startsWith(defaultPrefix)) {
+      const rest = titleRaw.substring(defaultPrefix.length);
+      return (
+        <>
+          <span className="text-white">{defaultPrefix}</span>
+          <span className={accentText}>{rest}</span>
+        </>
+      );
+    }
+    return <span className={accentText}>{titleRaw}</span>;
+  };
 
   return (
     <div className="max-w-xl mx-auto px-6 py-12 flex flex-col items-center">
@@ -289,8 +303,8 @@ export default function QuickResult() {
            <AuditIcon className="w-4 h-4" /> {narrative.label}
         </div>
 
-        <h2 className="text-2xl font-black text-white uppercase tracking-tight leading-tight mb-4">
-          <span className={accentText}>{narrative.title}</span>
+        <h2 className="text-2xl md:text-[28px] font-black uppercase tracking-tight leading-tight mb-5">
+          {renderTitle(narrative.title)}
         </h2>
 
         <p className="text-zinc-400 text-sm leading-relaxed mb-8">
@@ -308,7 +322,7 @@ export default function QuickResult() {
             <div className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-2 flex items-center gap-2">
               <TrendingUp className={`w-3 h-3 ${riskLevel === 'LOW' ? 'text-emerald-500' : 'text-red-500'}`} /> {narrative.impactLabel}
             </div>
-            <div className="text-xl font-black text-white" dangerouslySetInnerHTML={{ __html: narrative.impactText }}>
+            <div className={`text-xl font-black ${accentText}`} dangerouslySetInnerHTML={{ __html: narrative.impactText }}>
             </div>
           </div>
         </div>
