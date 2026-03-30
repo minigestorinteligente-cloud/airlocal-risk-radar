@@ -152,27 +152,12 @@ export default function QuickResult() {
   const headline = free?.headline || '';
   const intro = free?.intro || '';
 
-  // Calculate strict parameters for Tally
-  const summary = free?.user_summary || {};
+  // Calculate strict parameters for Tally using only origin data
+  const data = free?.user_summary || {};
+  const email = report?.email || emailFromUrl || '';
 
-  const userEmail = report?.email || emailFromUrl || '';
-  const revenueStr = report?.profit || summary?.gross_income || "0";
-  const ingresos = parseInt(String(revenueStr).replace(/[^\d.-]/g, '')) || 0;
-
-  // Nights logic
-  let noches_ocupadas = 0;
-  if (summary?.occupied_nights !== undefined) {
-    noches_ocupadas = parseInt(String(summary.occupied_nights).replace(/[^\d.-]/g, ''), 10) || 0;
-  } else if (summary?.activity !== undefined) {
-    const actMatch = String(summary.activity).match(/\d+/);
-    if (actMatch) noches_ocupadas = parseInt(actMatch[0], 10);
-  } else if (occupationPct > 0) {
-    noches_ocupadas = Math.round((occupationPct / 100) * 30);
-  }
-
-  const noches_disponibles = summary?.available_nights !== undefined 
-    ? parseInt(String(summary.available_nights).replace(/[^\d.-]/g, ''), 10) || 30 
-    : 30;
+  const tallyBaseUrl = 'https://tally.so/r/lbrdjo';
+  const tallyUrl = `${tallyBaseUrl}?email=${encodeURIComponent(email)}&occupied_nights=${data.occupied_nights || ''}&available_nights=${data.available_nights || ''}&gross_income=${data.gross_income || ''}`;
 
   let ctaText = '👉 Ver diagnóstico completo';
   if (riskLevel === 'HIGH') {
@@ -183,8 +168,6 @@ export default function QuickResult() {
     ctaText = '👉 Mejorar mi rentabilidad';
   }
 
-  const tallyBaseUrl = 'https://tally.so/r/lbrdjo';
-  const tallyUrl = `${tallyBaseUrl}?email=${encodeURIComponent(userEmail)}&occupied_nights=${noches_ocupadas}&available_nights=${noches_disponibles}&gross_income=${ingresos}`;
 
   // Narrative Content Mapping with extra safety
   const getRiskNarrative = (currentAccentText: string) => {
