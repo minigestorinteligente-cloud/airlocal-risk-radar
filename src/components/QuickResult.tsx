@@ -152,25 +152,20 @@ export default function QuickResult() {
   const headline = free?.headline || '';
   const intro = free?.intro || '';
 
-  // Calculate parameters for Tally
+  // Calculate strict parameters for Tally (No invented values)
   const summary = free?.user_summary || {};
-  const revenueStr = report?.profit || summary?.gross_income || "0";
-  const ingresosVal = parseInt(revenueStr.toString().replace(/[^\d.-]/g, '')) || 0;
 
-  const activityStr = summary?.activity || "";
-  const matchAct = String(activityStr).match(/\d+/);
-  const derivedOccupied = matchAct ? parseInt(matchAct[0], 10) : Math.round((occupationPct / 100) * 30);
-  const noches_ocupadas = summary?.occupied_nights !== undefined ? parseInt(String(summary.occupied_nights).replace(/[^\d.-]/g, ''), 10) : derivedOccupied || 0;
-  const noches_disponibles = summary?.available_nights !== undefined ? parseInt(String(summary.available_nights).replace(/[^\d.-]/g, ''), 10) : 30;
+  const cleanNumber = (val: any) => {
+    if (val === undefined || val === null || val === '') return '';
+    const str = String(val).replace(/[^\d]/g, '');
+    return str ? str : '';
+  };
 
-  const expenseRatio = metrics?.expense_ratio !== undefined ? metrics.expense_ratio : "0";
-  const expenseRatioNum = parseFloat(expenseRatio.toString().replace(/[^\d.-]/g, '')) || 0;
-  const expensePctRaw = expenseRatioNum > 1 ? expenseRatioNum : expenseRatioNum * 100;
-
-  const rawOpCost = metrics?.operating_costs !== undefined 
-    ? parseFloat(String(metrics.operating_costs).replace(/[^\d.-]/g, '')) 
-    : ingresosVal * (expensePctRaw / 100);
-  const gastosVal = Math.round(rawOpCost) || 0;
+  const userEmail = report?.email || emailFromUrl || '';
+  const ingresos = cleanNumber(summary?.gross_income ?? report?.profit);
+  // Intentamos obtener las noches de occupied_nights, o si en los antiguos se llamaba activity
+  const noches_ocupadas = cleanNumber(summary?.occupied_nights ?? summary?.activity);
+  const noches_disponibles = cleanNumber(summary?.available_nights);
 
   let ctaText = '👉 Ver diagnóstico completo';
   if (riskLevel === 'HIGH') {
@@ -181,8 +176,6 @@ export default function QuickResult() {
     ctaText = '👉 Mejorar mi rentabilidad';
   }
 
-  const userEmail = report?.email || emailFromUrl || '';
-  const ingresos = ingresosVal;
   const tallyBaseUrl = 'https://tally.so/r/lbrdjo';
   const tallyUrl = `${tallyBaseUrl}?email=${encodeURIComponent(userEmail)}&occupied_nights=${noches_ocupadas}&available_nights=${noches_disponibles}&gross_income=${ingresos}`;
 
