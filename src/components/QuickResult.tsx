@@ -152,20 +152,27 @@ export default function QuickResult() {
   const headline = free?.headline || '';
   const intro = free?.intro || '';
 
-  // Calculate strict parameters for Tally (No invented values)
+  // Calculate strict parameters for Tally
   const summary = free?.user_summary || {};
 
-  const cleanNumber = (val: any) => {
-    if (val === undefined || val === null || val === '') return '';
-    const str = String(val).replace(/[^\d]/g, '');
-    return str ? str : '';
-  };
-
   const userEmail = report?.email || emailFromUrl || '';
-  const ingresos = cleanNumber(summary?.gross_income ?? report?.profit);
-  // Intentamos obtener las noches de occupied_nights, o si en los antiguos se llamaba activity
-  const noches_ocupadas = cleanNumber(summary?.occupied_nights ?? summary?.activity);
-  const noches_disponibles = cleanNumber(summary?.available_nights);
+  const revenueStr = report?.profit || summary?.gross_income || "0";
+  const ingresos = parseInt(String(revenueStr).replace(/[^\d.-]/g, '')) || 0;
+
+  // Nights logic
+  let noches_ocupadas = 0;
+  if (summary?.occupied_nights !== undefined) {
+    noches_ocupadas = parseInt(String(summary.occupied_nights).replace(/[^\d.-]/g, ''), 10) || 0;
+  } else if (summary?.activity !== undefined) {
+    const actMatch = String(summary.activity).match(/\d+/);
+    if (actMatch) noches_ocupadas = parseInt(actMatch[0], 10);
+  } else if (occupationPct > 0) {
+    noches_ocupadas = Math.round((occupationPct / 100) * 30);
+  }
+
+  const noches_disponibles = summary?.available_nights !== undefined 
+    ? parseInt(String(summary.available_nights).replace(/[^\d.-]/g, ''), 10) || 30 
+    : 30;
 
   let ctaText = '👉 Ver diagnóstico completo';
   if (riskLevel === 'HIGH') {
