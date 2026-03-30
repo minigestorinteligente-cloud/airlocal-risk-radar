@@ -157,6 +157,12 @@ export default function QuickResult() {
   const revenueStr = report?.profit || summary?.gross_income || "0";
   const ingresosVal = parseInt(revenueStr.toString().replace(/[^\d.-]/g, '')) || 0;
 
+  const activityStr = summary?.activity || "";
+  const matchAct = String(activityStr).match(/\d+/);
+  const derivedOccupied = matchAct ? parseInt(matchAct[0], 10) : Math.round((occupationPct / 100) * 30);
+  const noches_ocupadas = summary?.occupied_nights !== undefined ? parseInt(String(summary.occupied_nights).replace(/[^\d.-]/g, ''), 10) : derivedOccupied || 0;
+  const noches_disponibles = summary?.available_nights !== undefined ? parseInt(String(summary.available_nights).replace(/[^\d.-]/g, ''), 10) : 30;
+
   const expenseRatio = metrics?.expense_ratio !== undefined ? metrics.expense_ratio : "0";
   const expenseRatioNum = parseFloat(expenseRatio.toString().replace(/[^\d.-]/g, '')) || 0;
   const expensePctRaw = expenseRatioNum > 1 ? expenseRatioNum : expenseRatioNum * 100;
@@ -175,7 +181,7 @@ export default function QuickResult() {
     ctaText = '👉 Mejorar mi rentabilidad';
   }
 
-  const tallyUrl = `https://tally.so/r/lbrdjo?email=${encodeURIComponent(emailFromUrl || '')}&ingresos=${ingresosVal}&gastos=${gastosVal}`;
+  const tallyUrl = `https://tally.so/r/lbrdjo?email=${encodeURIComponent(emailFromUrl || '')}&occupied_nights=${noches_ocupadas}&available_nights=${noches_disponibles}&gross_income=${ingresosVal}`;
 
   // Narrative Content Mapping with extra safety
   const getRiskNarrative = (currentAccentText: string) => {
