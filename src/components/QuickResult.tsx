@@ -153,8 +153,18 @@ export default function QuickResult() {
   const intro = free?.intro || '';
 
   // Calculate parameters for Tally
-  const ingresosVal = Math.round(Number(metrics?.gross_revenue || metrics?.ingresos || rawRev || 0));
-  const gastosVal = Math.round(Number(metrics?.total_expenses || metrics?.gastos || metrics?.expenses || 0));
+  const summary = free?.user_summary || {};
+  const revenueStr = report?.profit || summary?.gross_income || "0";
+  const ingresosVal = parseInt(revenueStr.toString().replace(/[^\d.-]/g, '')) || 0;
+
+  const expenseRatio = metrics?.expense_ratio !== undefined ? metrics.expense_ratio : "0";
+  const expenseRatioNum = parseFloat(expenseRatio.toString().replace(/[^\d.-]/g, '')) || 0;
+  const expensePctRaw = expenseRatioNum > 1 ? expenseRatioNum : expenseRatioNum * 100;
+
+  const rawOpCost = metrics?.operating_costs !== undefined 
+    ? parseFloat(String(metrics.operating_costs).replace(/[^\d.-]/g, '')) 
+    : ingresosVal * (expensePctRaw / 100);
+  const gastosVal = Math.round(rawOpCost) || 0;
 
   let ctaText = '👉 Ver diagnóstico completo';
   if (riskLevel === 'HIGH') {
