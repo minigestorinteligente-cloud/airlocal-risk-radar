@@ -181,8 +181,10 @@ export default function QuickResult() {
     ctaText = '👉 Mejorar mi rentabilidad';
   }
 
-  const tallyEmail = report?.email || emailFromUrl || '';
-  const tallyUrl = `https://tally.so/r/lbrdjo?email=${encodeURIComponent(tallyEmail)}&occupied_nights=${noches_ocupadas}&available_nights=${noches_disponibles}&gross_income=${ingresosVal}`;
+  const userEmail = report?.email || emailFromUrl || '';
+  const ingresos = ingresosVal;
+  const tallyBaseUrl = 'https://tally.so/r/lbrdjo';
+  const tallyUrl = `${tallyBaseUrl}?email=${encodeURIComponent(userEmail)}&occupied_nights=${noches_ocupadas}&available_nights=${noches_disponibles}&gross_income=${ingresos}`;
 
   // Narrative Content Mapping with extra safety
   const getRiskNarrative = (currentAccentText: string) => {
