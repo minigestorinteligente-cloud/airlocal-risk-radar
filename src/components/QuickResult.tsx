@@ -152,6 +152,21 @@ export default function QuickResult() {
   const headline = free?.headline || '';
   const intro = free?.intro || '';
 
+  // Calculate parameters for Tally
+  const ingresosVal = Math.round(Number(metrics?.gross_revenue || metrics?.ingresos || rawRev || 0));
+  const gastosVal = Math.round(Number(metrics?.total_expenses || metrics?.gastos || metrics?.expenses || 0));
+
+  let ctaText = '👉 Ver diagnóstico completo';
+  if (riskLevel === 'HIGH') {
+    ctaText = '👉 Corregir mi rentabilidad ahora';
+  } else if (riskLevel === 'MEDIUM') {
+    ctaText = '👉 Ver qué está afectando mi rentabilidad';
+  } else if (riskLevel === 'LOW') {
+    ctaText = '👉 Mejorar mi rentabilidad';
+  }
+
+  const tallyUrl = `https://tally.so/r/lbrdjo?email=${encodeURIComponent(emailFromUrl || '')}&ingresos=${ingresosVal}&gastos=${gastosVal}`;
+
   // Narrative Content Mapping with extra safety
   const getRiskNarrative = (currentAccentText: string) => {
     try {
@@ -339,10 +354,10 @@ export default function QuickResult() {
       {/* CTA */}
       <div className="w-full flex flex-col items-center gap-4">
         <a 
-          href={`/?email=${emailFromUrl}`}
-          className="w-full py-5 bg-[#10b981] hover:bg-[#0da271] text-white font-black tracking-widest rounded-xl transition-all shadow-[0_0_25px_rgba(16,185,129,0.3)] text-base uppercase flex items-center justify-center gap-3 active:scale-[0.98]"
+          href={tallyUrl}
+          className="w-full py-5 px-2 bg-[#10b981] hover:bg-[#0da271] text-white font-black tracking-widest rounded-xl transition-all shadow-[0_0_25px_rgba(16,185,129,0.3)] text-sm sm:text-base uppercase flex items-center justify-center gap-3 active:scale-[0.98] text-center"
         >
-          👉 Ver diagnóstico completo
+          {ctaText}
         </a>
         <p className="text-zinc-500 text-xs font-medium text-center max-w-[250px] leading-relaxed">
           Descubre exactamente dónde estás perdiendo dinero y cómo corregirlo
