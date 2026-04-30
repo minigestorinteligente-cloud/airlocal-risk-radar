@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
+import Script from 'next/script';
 import { createClient } from '@supabase/supabase-js';
 import { AlertTriangle, CheckCircle2, TrendingUp, ArrowRight } from 'lucide-react';
 import AnimatedNumber from './AnimatedNumber';
@@ -152,21 +153,11 @@ export default function QuickResult() {
   const headline = free?.headline || '';
   const intro = free?.intro || '';
 
-  // Calculate strict parameters for Tally using only origin data
-  const data = free?.user_summary || {};
-  const email = report?.email || emailFromUrl || '';
-
-  const tallyBaseUrl = 'https://tally.so/r/lbrdjo';
-  const tallyUrl = `${tallyBaseUrl}?email=${encodeURIComponent(email)}&occupied_nights=${data.occupied_nights || ''}&available_nights=${data.available_nights || ''}&gross_income=${data.gross_income || ''}`;
-
+  // 3. Texto del botón dinámico
   let ctaText = '👉 Ver diagnóstico completo';
-  if (riskLevel === 'HIGH') {
-    ctaText = '👉 Corregir mi rentabilidad ahora';
-  } else if (riskLevel === 'MEDIUM') {
-    ctaText = '👉 Ver qué está afectando mi rentabilidad';
-  } else if (riskLevel === 'LOW') {
-    ctaText = '👉 Mejorar mi rentabilidad';
-  }
+  if (riskLevel === 'HIGH') ctaText = '👉 Corregir mi rentabilidad ahora';
+  else if (riskLevel === 'MEDIUM') ctaText = '👉 Ver qué está afectando mi rentabilidad';
+  else if (riskLevel === 'LOW') ctaText = '👉 Mejorar mi rentabilidad';
 
 
   // Narrative Content Mapping with extra safety
@@ -278,8 +269,35 @@ export default function QuickResult() {
     return <span className={accentText}>{titleRaw}</span>;
   };
 
+  const openTally = () => {
+    // MAPEÓ PROFUNDO DE DATOS (Columna o JSON interno)
+    const valEmail = report?.email || emailFromUrl || '';
+    const valNoches = report?.occupied_nights || free?.user_summary?.occupied_nights || 0;
+    const valIngresos = report?.gross_income || free?.user_summary?.gross_income || 0;
+    const valDisponibles = report?.available_nights || free?.user_summary?.available_nights || 30;
+
+    if (typeof window !== 'undefined' && (window as any).Tally) {
+      (window as any).Tally.openPopup('lbrdjo', {
+        layout: 'modal',
+        hiddenFields: {
+          email: valEmail,
+          occupied_nights: valNoches,
+          available_nights: valDisponibles,
+          gross_income: valIngresos,
+        }
+      });
+    } else {
+      console.warn('Tally SDK no cargado. Intentando fallback...');
+      alert('Estamos preparando tu diagnóstico personalizado. Por favor, intenta de nuevo en un segundo.');
+    }
+  };
+
   return (
     <div className="max-w-xl mx-auto px-6 py-12 flex flex-col items-center">
+      <Script 
+        src="https://tally.so/widgets/embed.js" 
+        strategy="lazyOnload" 
+      />
       {/* HEADER */}
       <div className="flex flex-col items-center mb-12">
         <div className="w-16 h-16 mb-4">
@@ -355,12 +373,12 @@ export default function QuickResult() {
 
       {/* CTA */}
       <div className="w-full flex flex-col items-center gap-4">
-        <a 
-          href={tallyUrl}
-          className="w-full py-5 px-2 bg-[#10b981] hover:bg-[#0da271] text-white font-black tracking-widest rounded-xl transition-all shadow-[0_0_25px_rgba(16,185,129,0.3)] text-sm sm:text-base uppercase flex items-center justify-center gap-3 active:scale-[0.98] text-center"
+        <button 
+          onClick={openTally}
+          className="w-full py-5 px-2 bg-[#10b981] hover:bg-[#0da271] text-white rounded-lg font-bold transition-all"
         >
           {ctaText}
-        </a>
+        </button>
         <p className="text-zinc-500 text-xs font-medium text-center max-w-[250px] leading-relaxed">
           Descubre exactamente dónde estás perdiendo dinero y cómo corregirlo
         </p>
