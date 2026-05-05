@@ -99,17 +99,35 @@ export default function LandingPage() {
             
             {/* Saludable */}
             <div className="w-[200px] lg:w-[260px] animate-float-subtle" style={{ animationDelay: '0s' }}>
-              <img src="/card-saludable.png?v=2" alt="Estado Saludable" className="w-full h-auto object-contain transition-transform duration-300 hover:scale-105 hover:drop-shadow-[0_0_20px_rgba(0,255,209,0.2)]" />
+              <Image 
+                src="/card-saludable.png" 
+                alt="Estado Saludable" 
+                width={260} 
+                height={350} 
+                className="w-full h-auto object-contain transition-transform duration-300 hover:scale-105 hover:drop-shadow-[0_0_20px_rgba(0,255,209,0.2)]" 
+              />
             </div>
 
             {/* Vulnerable */}
             <div className="w-[200px] lg:w-[260px] animate-float-subtle" style={{ animationDelay: '0.2s' }}>
-              <img src="/card-vulnerable.png?v=2" alt="Estado Vulnerable" className="w-full h-auto object-contain transition-transform duration-300 hover:scale-105 hover:drop-shadow-[0_0_20px_rgba(255,255,255,0.1)]" />
+              <Image 
+                src="/card-vulnerable.png" 
+                alt="Estado Vulnerable" 
+                width={260} 
+                height={350} 
+                className="w-full h-auto object-contain transition-transform duration-300 hover:scale-105 hover:drop-shadow-[0_0_20px_rgba(255,255,255,0.1)]" 
+              />
             </div>
 
             {/* Critico */}
             <div className="w-[200px] lg:w-[260px] animate-float-subtle" style={{ animationDelay: '0.4s' }}>
-              <img src="/card-critico.png?v=2" alt="Estado Crítico" className="w-full h-auto object-contain transition-transform duration-300 hover:scale-105 hover:drop-shadow-[0_0_20px_rgba(255,100,100,0.2)]" />
+              <Image 
+                src="/card-critico.png" 
+                alt="Estado Crítico" 
+                width={260} 
+                height={350} 
+                className="w-full h-auto object-contain transition-transform duration-300 hover:scale-105 hover:drop-shadow-[0_0_20px_rgba(255,100,100,0.2)]" 
+              />
             </div>
 
           </div>
