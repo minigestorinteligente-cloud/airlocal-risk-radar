@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import Image from 'next/image';
+// Force redeploy: 2026-05-05T15:20:00Z
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
