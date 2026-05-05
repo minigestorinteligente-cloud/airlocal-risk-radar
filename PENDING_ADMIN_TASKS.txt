@@ -1,0 +1,6 @@
+# TAREAS PENDIENTES - PANEL DE ADMINISTRADOR
+
+1. Gestión de Usuarios (User Management):
+   - Investigar y corregir el error 404 que se dispara al acceder o navegar por la sección.
+   - Implementar la función de Borrar Usuarios.
+   - Implementar la función de Editar Usuarios (gestión de roles, cambios de plan, etc.).
