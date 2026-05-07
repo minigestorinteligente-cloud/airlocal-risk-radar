@@ -120,14 +120,18 @@ export default function LandingPage() {
             </div>
 
             {/* Critico */}
-            <div className="w-[200px] lg:w-[260px] animate-float-subtle" style={{ animationDelay: '0.4s' }}>
-              <Image 
-                src="/card-critico.png" 
-                alt="Estado Crítico" 
-                width={260} 
-                height={350} 
-                className="w-full h-auto object-contain transition-transform duration-300 hover:scale-105 hover:drop-shadow-[0_0_20px_rgba(255,100,100,0.2)]" 
-              />
+            <div className="relative w-[200px] lg:w-[260px] animate-float-subtle" style={{ animationDelay: '0.4s' }}>
+              <div className="relative z-10">
+                <img
+                  src="/card-critico.png"
+                  alt="Estado Crítico"
+                  style={{
+                    width: "100%",
+                    height: "auto",
+                    display: "block"
+                  }}
+                />
+              </div>
             </div>
 
           </div>
