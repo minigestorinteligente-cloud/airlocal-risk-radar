@@ -120,15 +120,17 @@ export default function LandingPage() {
             </div>
 
             {/* Critico */}
-            <div className="relative w-[200px] lg:w-[260px] animate-float-subtle" style={{ animationDelay: '0.4s' }}>
-              <div className="relative z-10">
+            <div className="relative w-[200px] lg:w-[260px] animate-float-subtle" style={{ animationDelay: '0.4s', opacity: 1, visibility: 'visible' }}>
+              <div style={{ position: "relative", zIndex: 9999 }}>
                 <img
                   src="/card-critico.png"
                   alt="Estado Crítico"
                   style={{
                     width: "100%",
                     height: "auto",
-                    display: "block"
+                    display: "block",
+                    opacity: 1,
+                    visibility: "visible"
                   }}
                 />
               </div>
