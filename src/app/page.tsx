@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import Image from 'next/image';
-// Force redeploy: 2026-05-05T15:20:00Z
+// FORCE PRODUCTION REDEPLOY: 2026-05-07T13:50:00Z
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -99,22 +99,18 @@ export default function LandingPage() {
             
             {/* Saludable */}
             <div className="w-[200px] lg:w-[260px] animate-float-subtle" style={{ animationDelay: '0s' }}>
-              <Image 
+              <img 
                 src="/card-saludable.png" 
                 alt="Estado Saludable" 
-                width={260} 
-                height={350} 
                 className="w-full h-auto object-contain transition-transform duration-300 hover:scale-105 hover:drop-shadow-[0_0_20px_rgba(0,255,209,0.2)]" 
               />
             </div>
 
             {/* Vulnerable */}
             <div className="w-[200px] lg:w-[260px] animate-float-subtle" style={{ animationDelay: '0.2s' }}>
-              <Image 
+              <img 
                 src="/card-vulnerable.png" 
                 alt="Estado Vulnerable" 
-                width={260} 
-                height={350} 
                 className="w-full h-auto object-contain transition-transform duration-300 hover:scale-105 hover:drop-shadow-[0_0_20px_rgba(255,255,255,0.1)]" 
               />
             </div>

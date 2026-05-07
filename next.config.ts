@@ -5,4 +5,8 @@ const withPWA = require("next-pwa")({
 module.exports = withPWA({
   reactStrictMode: true,
   turbopack: {},
+  images: {
+    unoptimized: true
+  },
+  output: 'standalone'
 })
