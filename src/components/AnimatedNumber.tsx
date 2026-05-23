@@ -18,7 +18,10 @@ export default function AnimatedNumber({
   const [count, setCount] = useState(0);
 
   useEffect(() => {
+    let animationFrameId: number;
     let startTimestamp: number | null = null;
+    let fallbackTimer: NodeJS.Timeout;
+
     const step = (timestamp: number) => {
       if (!startTimestamp) startTimestamp = timestamp;
       const progress = Math.min((timestamp - startTimestamp) / duration, 1);
@@ -28,13 +31,24 @@ export default function AnimatedNumber({
       setCount(Math.floor(easeProgress * value));
       
       if (progress < 1) {
-        window.requestAnimationFrame(step);
+        animationFrameId = window.requestAnimationFrame(step);
       } else {
         setCount(value);
       }
     };
 
-    window.requestAnimationFrame(step);
+    animationFrameId = window.requestAnimationFrame(step);
+
+    // Fallback de seguridad por si requestAnimationFrame es bloqueado en móviles (ej: ahorro de energía)
+    fallbackTimer = setTimeout(() => {
+      setCount(value);
+      if (animationFrameId) window.cancelAnimationFrame(animationFrameId);
+    }, duration + 150);
+
+    return () => {
+      if (animationFrameId) window.cancelAnimationFrame(animationFrameId);
+      clearTimeout(fallbackTimer);
+    };
   }, [value, duration]);
 
   const formattedCount = count.toLocaleString('en-US');
