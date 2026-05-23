@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef } from "react";
 
 export default function AnimatedNumber({ 
   value, 
@@ -15,7 +15,7 @@ export default function AnimatedNumber({
   duration?: number, 
   className?: string 
 }) {
-  const [count, setCount] = useState(0);
+  const spanRef = useRef<HTMLSpanElement>(null);
 
   useEffect(() => {
     let animationFrameId: number;
@@ -28,12 +28,18 @@ export default function AnimatedNumber({
       
       // Función de "easing" para un efecto casino fluido al final (easeOutExpo)
       const easeProgress = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
-      setCount(Math.floor(easeProgress * value));
+      const currentVal = Math.floor(easeProgress * value);
+      
+      if (spanRef.current) {
+        spanRef.current.textContent = `${prefix}${currentVal.toLocaleString('en-US')}${suffix}`;
+      }
       
       if (progress < 1) {
         animationFrameId = window.requestAnimationFrame(step);
       } else {
-        setCount(value);
+        if (spanRef.current) {
+          spanRef.current.textContent = `${prefix}${value.toLocaleString('en-US')}${suffix}`;
+        }
       }
     };
 
@@ -41,7 +47,9 @@ export default function AnimatedNumber({
 
     // Fallback de seguridad por si requestAnimationFrame es bloqueado en móviles (ej: ahorro de energía)
     fallbackTimer = setTimeout(() => {
-      setCount(value);
+      if (spanRef.current) {
+        spanRef.current.textContent = `${prefix}${value.toLocaleString('en-US')}${suffix}`;
+      }
       if (animationFrameId) window.cancelAnimationFrame(animationFrameId);
     }, duration + 150);
 
@@ -49,13 +57,11 @@ export default function AnimatedNumber({
       if (animationFrameId) window.cancelAnimationFrame(animationFrameId);
       clearTimeout(fallbackTimer);
     };
-  }, [value, duration]);
-
-  const formattedCount = count.toLocaleString('en-US');
+  }, [value, duration, prefix, suffix]);
 
   return (
-    <span className={className}>
-      {prefix}{formattedCount}{suffix}
+    <span ref={spanRef} className={className} translate="no">
+      {prefix}{(0).toLocaleString('en-US')}{suffix}
     </span>
   );
 }
