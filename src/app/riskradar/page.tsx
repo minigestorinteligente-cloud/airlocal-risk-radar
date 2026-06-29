@@ -16,7 +16,7 @@ function LoadingSkeleton() {
   );
 }
 
-export default async function QuickResultPage({ searchParams }: Props) {
+export default async function RiskRadarPage({ searchParams }: Props) {
   return (
     <main className="min-h-screen bg-[#0B0B0C] text-[#eeeeee] font-sans selection:bg-[#00FFD1]/30 flex flex-col overflow-x-hidden">
       
@@ -36,7 +36,7 @@ export default async function QuickResultPage({ searchParams }: Props) {
         </Link>
       </header>
 
-      {/* Spacing container to ensure QuickResultTest starts below the sticky header */}
+      {/* Spacing container to ensure QuickResult starts below the sticky header */}
       <div className="flex-1 w-full pt-10 md:pt-14">
         <Suspense fallback={<LoadingSkeleton />}>
           <QuickResult />

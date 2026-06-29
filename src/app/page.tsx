@@ -12,15 +12,8 @@ export default function LandingPage() {
   return (
     <main className="min-h-screen bg-[#0B0B0C] text-[#eeeeee] font-sans selection:bg-[#00FFD1]/30 overflow-x-hidden">
       
-      {/* 0. STICKY ANNOUNCEMENT BAR */}
-      <div className="fixed top-0 left-0 w-full h-10 bg-[#0B0B0C]/90 backdrop-blur-md border-b border-white/5 z-[60] flex items-center justify-center px-4">
-        <p className="text-[10px] sm:text-xs font-bold tracking-widest text-white uppercase">
-          🔥 Diagnóstico gratis por tiempo limitado <span className="text-[#00FFD1] ml-1">(valor real $47)</span>
-        </p>
-      </div>
-
       {/* 1. HEADER */}
-      <header className="w-full py-5 px-6 md:px-12 flex items-center justify-between border-b border-white/5 bg-[#0B0B0C] sticky top-10 z-50">
+      <header className="w-full py-5 px-6 md:px-12 flex items-center justify-between border-b border-white/5 bg-[#0B0B0C] sticky top-0 z-50">
         <div className="flex items-center gap-3 font-bold tracking-widest text-white uppercase text-xs">
           <div className="w-8 h-8 rounded-full bg-[#00FFD1] text-[#0B0B0C] flex items-center justify-center font-black text-sm shadow-[0_0_15px_rgba(0,255,209,0.3)]">A</div>
           <div>AIRLOCAL <span className="text-zinc-500 font-medium ml-2">| Risk Radar</span></div>
@@ -34,7 +27,7 @@ export default function LandingPage() {
       </header>
 
       {/* 2. HERO SECTION FULL WIDTH CENTRADO */}
-      <section className="relative w-full min-h-[90vh] flex flex-col items-center justify-center pt-28 pb-32 px-6 overflow-hidden">
+      <section className="relative w-full min-h-[90vh] flex flex-col items-center justify-center pt-16 pb-24 px-6 overflow-hidden">
         {/* Background Image Optimizado */}
         <div className="absolute inset-0 pointer-events-none">
           <Image 

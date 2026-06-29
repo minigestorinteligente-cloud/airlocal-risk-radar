@@ -1,0 +1,269 @@
+{
+  "id": "19282423-c74e-4db9-8abd-0736a84d56fe",
+  "created_at": "2026-06-13T18:33:41.947979+00:00",
+  "email": "malenasoloads@gmail.com",
+  "report_data": {
+    "free": {
+      "intro": "Tu propiedad se encuentra en un rango de control saludable.",
+      "metrics": {
+        "net_income": 1600,
+        "expense_ratio": 47,
+        "margin_of_safety": 9,
+        "break_even_nights": 7,
+        "avg_nightly_income": 188
+      },
+      "headline": "AUDITORÍA: OPERACIÓN SALUDABLE",
+      "hero_anual": 5340,
+      "risk_level": "low",
+      "hero_titulo": "OPORTUNIDAD TOTAL IDENTIFICADA",
+      "impact_text": "Podrías estar rescatando hasta <span class=\"text-[#FFB800]\">$400 USD</span> al mes (o <span class=\"text-emerald-500\">$4,800 USD</span> al año) si alcanzas la ocupación objetivo de tu mercado (65% de Occupancy).",
+      "hero_mensual": 445,
+      "user_summary": {
+        "activity": "16 noches vendidas este mes",
+        "capacity": "2 huéspedes · 1 hab · 1 baños",
+        "location": "Dar Es Salam, TZ",
+        "gross_income": 3000,
+        "property_name": "prueba"
+      },
+      "hero_descripcion": "El motor AIRLOCAL identificó múltiples oportunidades de mejora priorizadas por impacto económico.",
+      "noches_restantes": 9
+    },
+    "meta": {
+      "email": "malenasoloads@gmail.com",
+      "premium_cta": "Exportar Reporte a PDF",
+      "premium_locked": false
+    },
+    "simulador": {
+      "prioridad_1": {
+        "tipo": "ocupacion",
+        "accion": "Tu prioridad absoluta es capturar noches actualmente vacías. Estás operando por debajo del umbral mínimo de ocupación para tu mercado.",
+        "categoria": "Ocupación",
+        "descripcion": "Te faltan 4 noches para alcanzar la ocupación objetivo (65%) de tu mercado.",
+        "impacto_anual": 4800,
+        "impacto_mensual": 400
+      },
+      "prioridad_2": {
+        "tipo": "limpieza",
+        "accion": "Mantén tus costos actuales congelados y enfócate en subir tu tarifa promedio los fines de semana.",
+        "categoria": "Limpieza",
+        "descripcion": "Eficiente. Tu costo está alineado con el mercado local.",
+        "impacto_anual": 540,
+        "impacto_mensual": 45
+      }
+    },
+    "tacometro": {
+      "score": 83,
+      "score_final": 83,
+      "riesgo_financiero": 0,
+      "simulador_what_if": {
+        "escenario_precio": "Si optimizas tu ADR subiendo $10 USD y tu Occupancy baja un 5%, tu ganancia neta sube +$2 USD/mes. Tu punto de equilibrio baja a 7 noches.",
+        "escenario_limpieza": "Si recortas el sobregasto detectado en limpieza frente al promedio de Dar Es Salam, liberas de inmediato +$45 USD al mes de pura utilidad libre."
+      }
+    },
+    "radar_fugas": {
+      "labels": [
+        "Comisiones",
+        "Limpieza",
+        "Servicios",
+        "Mantenimiento",
+        "Impuestos",
+        "Otros"
+      ],
+      "detalles": {
+        "comision": {
+          "nota": "Bajo control. Sigue monitoreando tus canales de venta preferidos.",
+          "monto": 450
+        },
+        "limpieza": {
+          "nota": "Eficiente. Tu costo está alineado con el mercado local.",
+          "monto": 300
+        },
+        "servicios": {
+          "nota": "Buen manejo. Solo cuida los picos de consumo en temporadas altas.",
+          "monto": 200
+        },
+        "mantenimiento": {
+          "nota": "Excelente. Mantén tu libreta de mantenimiento preventivo al día.",
+          "monto": 150
+        }
+      },
+      "tus_costos_pct": [
+        32,
+        21,
+        14,
+        11,
+        18,
+        4
+      ],
+      "benchmark_ideal_pct": [
+        15,
+        10,
+        12,
+        5,
+        18,
+        3
+      ]
+    },
+    "seccion_percepcion": {
+      "precio": {
+        "titulo": "Tu Estrategia de Precios",
+        "diagnostico": "Tus noches se venden a un ADR (Tarifa Promedio Diaria) de $188 USD. Hay espacio para optimizar tu estrategia según la temporada."
+      },
+      "tiempo": {
+        "titulo": "Tu Tiempo Disponible",
+        "diagnostico": "Pasas horas controlando la unidad de 1 habs. Automatizar la coordinación del equipo te devolverá la tranquilidad."
+      },
+      "control": {
+        "titulo": "Tu Nivel de Control",
+        "diagnostico": "Tu nivel de gastos representa el 47% de tus ingresos. Este reporte te da la visibilidad exacta que necesitas."
+      }
+    },
+    "plan_accion_inteligente": {
+      "paso_1": {
+        "hacer": "Tu prioridad absoluta es capturar noches actualmente vacías. Estás operando por debajo del umbral mínimo de ocupación para tu mercado.",
+        "titulo": "PASO 1: Impacto Inmediato (Días 1-30)",
+        "beneficio": "+$400 USD / mes"
+      },
+      "paso_2": {
+        "hacer": "Mantén tus costos actuales congelados y enfócate en subir tu tarifa promedio los fines de semana.",
+        "titulo": "PASO 2: Corrección Estratégica (Días 31-60)",
+        "beneficio": "+$45 USD / mes"
+      },
+      "paso_3": {
+        "hacer": "Abre un canal directo propio (WhatsApp o Web simple) ya que tus clientes valoran tu servicio.",
+        "titulo": "PASO 3: Control Pasivo Continuo (Días 61-90)",
+        "beneficio": "+$0 USD / mes"
+      },
+      "resumen_anual": {
+        "hacer": "Implementando este mapa de ruta personalizado para prueba, el motor de AIRLOCAL proyecta una recuperación de capital anualizada limpia para tu operación.",
+        "titulo": "Potencial Total de Rescate",
+        "beneficio": "+$5,340 USD / año",
+        "total_oportunidades": 2
+      }
+    },
+    "oportunidades_rentabilidad": {
+      "lanes": [
+        {
+          "accion": "Tu prioridad absoluta es capturar noches actualmente vacías. Estás operando por debajo del umbral mínimo de ocupación para tu mercado.",
+          "categoria": "ocupacion",
+          "impacto_anual": 4800,
+          "impacto_mensual": 400
+        },
+        {
+          "accion": "Incrementa tu visibilidad en OTA y canales directos para acelerar la ocupación de las noches disponibles.",
+          "categoria": "visibilidad",
+          "impacto_anual": 2400,
+          "impacto_mensual": 200
+        },
+        {
+          "accion": "Ajusta tarifas y promociones estratégicas para mejorar conversión sin deteriorar tu ADR.",
+          "categoria": "pricing",
+          "impacto_anual": 1200,
+          "impacto_mensual": 100
+        }
+      ],
+      "ranking": [
+        {
+          "tipo": "ocupacion",
+          "accion": "Tu prioridad absoluta es capturar noches actualmente vacías. Estás operando por debajo del umbral mínimo de ocupación para tu mercado.",
+          "categoria": "Ocupación",
+          "descripcion": "Te faltan 4 noches para alcanzar la ocupación objetivo (65%) de tu mercado.",
+          "impacto_anual": 4800,
+          "impacto_mensual": 400
+        },
+        {
+          "tipo": "limpieza",
+          "accion": "Mantén tus costos actuales congelados y enfócate en subir tu tarifa promedio los fines de semana.",
+          "categoria": "Limpieza",
+          "descripcion": "Eficiente. Tu costo está alineado con el mercado local.",
+          "impacto_anual": 540,
+          "impacto_mensual": 45
+        },
+        {
+          "tipo": "comisiones",
+          "accion": "Abre un canal directo propio (WhatsApp o Web simple) ya que tus clientes valoran tu servicio.",
+          "categoria": "Comisiones",
+          "descripcion": "Bajo control. Sigue monitoreando tus canales de venta preferidos.",
+          "impacto_anual": 0,
+          "impacto_mensual": 0
+        },
+        {
+          "tipo": "servicios",
+          "accion": "Usa este excedente para crear ofertas especiales y rellenar los días libres de mitad de semana.",
+          "categoria": "Servicios",
+          "descripcion": "Buen manejo. Solo cuida los picos de consumo en temporadas altas.",
+          "impacto_anual": 0,
+          "impacto_mensual": 0
+        },
+        {
+          "tipo": "mantenimiento",
+          "accion": "¡Felicidades! Tu unidad está entre las más eficientes. Lista para competir en el Top 10% del mercado.",
+          "categoria": "Mantenimiento",
+          "descripcion": "Excelente. Mantén tu libreta de mantenimiento preventivo al día.",
+          "impacto_anual": 0,
+          "impacto_mensual": 0
+        },
+        {
+          "tipo": "impuestos",
+          "accion": "Revisa la categorización fiscal y las deducciones disponibles para tu operación; tu carga impositiva supera el benchmark de la industria.",
+          "categoria": "Impuestos",
+          "descripcion": "Optimización fiscal frente al benchmark de mercado.",
+          "impacto_anual": 0,
+          "impacto_mensual": 0
+        },
+        {
+          "tipo": "otros",
+          "accion": "Audita los gastos ocultos e imprevistos del mes; representan micro-fugas que erosionan tu utilidad neta.",
+          "categoria": "Otros",
+          "descripcion": "Gastos ocultos por encima del benchmark de la industria.",
+          "impacto_anual": 0,
+          "impacto_mensual": 0
+        }
+      ],
+      "principal": {
+        "tipo": "ocupacion",
+        "accion": "Tu prioridad absoluta es capturar noches actualmente vacías. Estás operando por debajo del umbral mínimo de ocupación para tu mercado.",
+        "categoria": "Ocupación",
+        "descripcion": "Te faltan 4 noches para alcanzar la ocupación objetivo (65%) de tu mercado.",
+        "impacto_anual": 4800,
+        "impacto_mensual": 400
+      },
+      "terciaria": {
+        "tipo": "comisiones",
+        "accion": "Abre un canal directo propio (WhatsApp o Web simple) ya que tus clientes valoran tu servicio.",
+        "categoria": "Comisiones",
+        "descripcion": "Bajo control. Sigue monitoreando tus canales de venta preferidos.",
+        "impacto_anual": 0,
+        "impacto_mensual": 0
+      },
+      "adr_actual": 188,
+      "secundaria": {
+        "tipo": "limpieza",
+        "accion": "Mantén tus costos actuales congelados y enfócate en subir tu tarifa promedio los fines de semana.",
+        "categoria": "Limpieza",
+        "descripcion": "Eficiente. Tu costo está alineado con el mercado local.",
+        "impacto_anual": 540,
+        "impacto_mensual": 45
+      },
+      "oportunidad": {
+        "titulo": "Noches Disponibles por Capturar",
+        "unidad": "noches",
+        "descripcion": "Te faltan 4 noches para alcanzar la ocupación objetivo de tu mercado.",
+        "valor_principal": 4
+      },
+      "impacto_anual": 4800,
+      "impacto_mensual": 400,
+      "noches_faltantes": 4,
+      "occupancy_target": 65,
+      "ocupacion_actual": 53,
+      "equivalente_noches": null,
+      "principal_limitante": "ocupacion",
+      "oportunidad_total_anual": 5340,
+      "oportunidad_total_mensual": 445
+    }
+  },
+  "riesgo": null,
+  "profit": null,
+  "perdida_potencial": null,
+  "tipo_reporte": "quick"
+}

@@ -1,6 +1,6 @@
 import { Suspense } from 'react';
 import Link from 'next/link';
-import QuickResult from '@/components/QuickResult';
+import QuickResultTest from '@/components/QuickResultTest';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,7 +16,7 @@ function LoadingSkeleton() {
   );
 }
 
-export default async function QuickResultPage({ searchParams }: Props) {
+export default async function RiskRadarTestPage({ searchParams }: Props) {
   return (
     <main className="min-h-screen bg-[#0B0B0C] text-[#eeeeee] font-sans selection:bg-[#00FFD1]/30 flex flex-col overflow-x-hidden">
       
@@ -39,7 +39,7 @@ export default async function QuickResultPage({ searchParams }: Props) {
       {/* Spacing container to ensure QuickResultTest starts below the sticky header */}
       <div className="flex-1 w-full pt-10 md:pt-14">
         <Suspense fallback={<LoadingSkeleton />}>
-          <QuickResult />
+          <QuickResultTest />
         </Suspense>
       </div>
     </main>
