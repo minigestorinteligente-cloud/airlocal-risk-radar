@@ -280,7 +280,6 @@ function AuditoriaFormContent() {
   const [isUnlocked, setIsUnlocked] = useState(false);
   const [showPlaceholderForm, setShowPlaceholderForm] = useState(false);
 
-  // 1. INTERFAZ Y ESTADO DEL FORMULARIO CON TIPOS Y VALORES PREVIOS
   interface FormDataState {
     property_name: string;
     country: string;
@@ -299,6 +298,7 @@ function AuditoriaFormContent() {
     maintenence_cost: number | string;
     tax_cost: number | string;
     Hidden_cost: number | string;
+    approximate_expenses: number | string;
     stability_perception: string;
     risk_perception: string;
     no_major_risk: string;
@@ -323,6 +323,7 @@ function AuditoriaFormContent() {
     maintenence_cost: 150,
     tax_cost: 250,
     Hidden_cost: 50,
+    approximate_expenses: 1400,
     stability_perception: 'Se mantuvieron',
     risk_perception: 'Totalmente bajo control',
     no_major_risk: 'Nada en particular (por ahora)',
@@ -415,6 +416,15 @@ function AuditoriaFormContent() {
     setCurrentStep(prev => Math.max(prev - 1, 1));
   };
 
+  const handlePremiumSubmit = async () => {
+    setIsFetchingReport(true);
+    // Simular tiempo de procesamiento
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    setIsFetchingReport(false);
+    setShowPlaceholderForm(false);
+    setIsUnlocked(true);
+  };
+
   // CÁLCULOS MATEMÁTICOS DEL CEREBRO N8N (LOCAL FALLBACK DE ALTO RENDIMIENTO)
   const calculateResults = () => {
     const safeNum = (val: any) => isNaN(Number(val)) ? 0 : Number(val);
@@ -436,7 +446,9 @@ function AuditoriaFormContent() {
       }
     };
 
-    const total_costs = Object.values(input.costs).reduce((a, b) => a + b, 0);
+    const total_costs = isUnlocked
+      ? Object.values(input.costs).reduce((a, b) => a + b, 0)
+      : safeNum(formData.approximate_expenses || 1400);
     const net_income = input.gross_income - total_costs;
     const expense_ratio = input.gross_income > 0 ? Math.round((total_costs / input.gross_income) * 100) : 0;
     const factorX = input.gross_income > 0 ? (total_costs / input.gross_income).toFixed(1) : "0.0";
@@ -517,8 +529,8 @@ function AuditoriaFormContent() {
   const handleSubmit = async (e?: React.FormEvent | React.MouseEvent) => {
     if (e) e.preventDefault();
 
-    // El webhook a N8N se dispara única y exclusivamente en el Paso 4 (Entorno)
-    if (currentStep !== 4) {
+    // El webhook a N8N se dispara única y exclusivamente en el Paso 3 (Email)
+    if (currentStep !== 3) {
       nextStep();
       return;
     }
@@ -542,12 +554,12 @@ function AuditoriaFormContent() {
       occupied_nights: Math.round(Number(formData.occupied_nights)),
       available_nights: Math.round(Number(formData.available_nights)),
       gross_income: Math.round(Number(formData.gross_income)),
-      platfom_commission: Math.round(Number(formData.platfom_commission)),
-      cleaning_cost: Math.round(Number(formData.cleaning_cost)),
-      services_cost: Math.round(Number(formData.services_cost)),
-      maintenence_cost: Math.round(Number(formData.maintenence_cost)),
-      tax_cost: Math.round(Number(formData.tax_cost)),
-      Hidden_cost: Math.round(Number(formData.Hidden_cost)),
+      platfom_commission: 0,
+      cleaning_cost: 0,
+      services_cost: 0,
+      maintenence_cost: 0,
+      tax_cost: 0,
+      Hidden_cost: Math.round(Number(formData.approximate_expenses || 1400)),
       stability_perception: String(formData.stability_perception),
       risk_perception: String(formData.risk_perception),
       no_major_risk: String(formData.no_major_risk),
@@ -564,7 +576,7 @@ function AuditoriaFormContent() {
       });
 
       // Avanzamos el paso y mostramos el estado de carga del reporte
-      setCurrentStep(5);
+      setCurrentStep(4);
       setIsFetchingReport(true);
       const submitTime = new Date(Date.now() - 30000).toISOString(); // 30s buffer for safety
 
@@ -1763,15 +1775,14 @@ function AuditoriaFormContent() {
             {/* Línea de progreso activa */}
             <div 
               className="absolute top-1/2 left-0 h-[2px] bg-[#00D1B2] -translate-y-1/2 transition-all duration-500 ease-in-out z-0"
-              style={{ width: `${((currentStep - 1) / 3) * 100}%` }}
+              style={{ width: `${((currentStep - 1) / 2) * 100}%` }}
             ></div>
 
             {/* Pasos */}
             {[
-              { step: 1, name: 'Identificación' },
-              { step: 2, name: 'Operación' },
-              { step: 3, name: 'Costos' },
-              { step: 4, name: 'Entorno' },
+              { step: 1, name: 'Identidad' },
+              { step: 2, name: 'Diagnóstico' },
+              { step: 3, name: 'Email' }
             ].map((item) => {
               const isActive = currentStep === item.step;
               const isCompleted = currentStep > item.step;
@@ -1805,19 +1816,18 @@ function AuditoriaFormContent() {
           </div>
           <div className="text-center sm:hidden mt-3">
             <span className="text-xs uppercase font-extrabold tracking-widest text-[#00D1B2]">
-              Paso {currentStep} de 4: {[
+              Paso {currentStep} de 3: {[
                 'Identificación de Propiedad',
-                'Operación Mensual',
-                'Costos del Período',
-                'Percepciones de Entorno'
+                'Diagnóstico Rápido',
+                'Email de Contacto'
               ][currentStep - 1]}
             </span>
           </div>
         </div>
       )}
 
-      {currentStep === 5 && !isFetchingReport ? (
-        /* PANTALLA 5: RESULTADOS CON REPORTE PREMIUM COMPLETO (NÍTIDO Y ACCIONABLE) - SIN TARJETA CONTENEDORA EXTERNA */
+      {currentStep === 4 && !isFetchingReport ? (
+        /* PANTALLA 4: RESULTADOS CON REPORTE PREMIUM COMPLETO (NÍTIDO Y ACCIONABLE) - SIN TARJETA CONTENEDORA EXTERNA */
         <div className="space-y-8 animate-in fade-in zoom-in-95 duration-500 text-left w-full">
             
             {/* CABECERA DE RESUMEN INICIAL */}
@@ -1920,46 +1930,250 @@ function AuditoriaFormContent() {
 
             {/* SEPARADOR ELEGANTE ENTRE CABECERA Y FASES Y EL RESTO DEL REPORTE BLURREADO */}
             {showPlaceholderForm ? (
-              /* FORMULARIO LARGO / AUDITORÍA COMPLETA PLACEHOLDER */
-              <div className="w-full bg-[#121318] border border-[#00D1B2]/30 rounded-3xl p-8 md:p-12 text-center flex flex-col items-center justify-center gap-6 animate-in fade-in duration-500 shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
-                <div className="w-12 h-12 rounded-full bg-[#00D1B2]/10 text-[#00D1B2] flex items-center justify-center font-black text-xl mb-2">
-                  📋
+              /* FORMULARIO LARGO / AUDITORÍA COMPLETA PREMIUM */
+              <div className="w-full bg-[#121318] border border-[#00D1B2]/30 rounded-3xl p-8 md:p-12 text-left flex flex-col gap-8 animate-in fade-in duration-500 shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
+                <div className="border-b border-white/5 pb-4">
+                  <span className="text-[10px] font-black text-[#00D1B2] uppercase tracking-[0.15em] block mb-1">AUDITORÍA OPERATIVA COMPLETA</span>
+                  <h3 className="text-xl md:text-2xl font-black text-white uppercase tracking-tight">
+                    Completa los Datos de tu Auditoría
+                  </h3>
+                  <p className="text-xs text-[#8e8e93] font-semibold mt-1">
+                    No estás empezando de nuevo. Tus datos básicos ya han sido cargados. Completa los costos desglosados para desbloquear la segunda mitad del análisis.
+                  </p>
                 </div>
-                <h3 className="text-xl md:text-2xl font-black text-white uppercase tracking-tight">
-                  Formulario de Auditoría Completa
-                </h3>
-                <p className="text-zinc-400 text-xs md:text-sm font-semibold max-w-lg leading-relaxed">
-                  Aquí se mostrará el formulario largo para recopilar los datos operacionales detallados y las integraciones del canal para generar la auditoría premium.
-                </p>
-                
-                <div className="w-full max-w-md border border-white/5 bg-black/20 p-6 rounded-2xl flex flex-col gap-4 text-left">
-                  <div className="flex flex-col gap-1.5">
-                    <span className="text-[10px] text-zinc-500 font-extrabold uppercase tracking-widest">Ejemplo de campos futuros</span>
-                    <div className="h-2 w-24 bg-white/10 rounded" />
-                    <div className="h-8 w-full bg-white/5 rounded border border-white/10" />
-                  </div>
-                  <div className="flex flex-col gap-1.5">
-                    <div className="h-2 w-16 bg-white/10 rounded" />
-                    <div className="h-8 w-full bg-white/5 rounded border border-white/10" />
+
+                {/* 1. SECCIÓN: DATOS GENERALES (PRECARGADOS Y EDITABLES) */}
+                <div className="bg-black/20 border border-white/5 rounded-2xl p-6 space-y-4">
+                  <h4 className="text-xs font-black text-white uppercase tracking-widest flex items-center gap-2">
+                    <span className="text-[#00D1B2]">✓</span> Datos Precargados
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {/* Nombre del Inmueble */}
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Nombre del inmueble</label>
+                      <input 
+                        type="text"
+                        name="property_name"
+                        value={formData.property_name}
+                        onChange={handleInputChange}
+                        className="w-full bg-[#18181A] border border-white/10 rounded-xl px-4 py-2.5 text-xs text-zinc-300 focus:outline-none focus:border-[#00D1B2]"
+                      />
+                    </div>
+                    {/* País */}
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">País</label>
+                      <input 
+                        type="text"
+                        name="country"
+                        value={formData.country}
+                        onChange={handleInputChange}
+                        className="w-full bg-[#18181A] border border-white/10 rounded-xl px-4 py-2.5 text-xs text-zinc-300 focus:outline-none focus:border-[#00D1B2]"
+                      />
+                    </div>
+                    {/* Ciudad */}
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Ciudad</label>
+                      <input 
+                        type="text"
+                        name="city"
+                        value={formData.city}
+                        onChange={handleInputChange}
+                        className="w-full bg-[#18181A] border border-white/10 rounded-xl px-4 py-2.5 text-xs text-zinc-300 focus:outline-none focus:border-[#00D1B2]"
+                      />
+                    </div>
+                    {/* Tipo de Propiedad */}
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Tipo de propiedad</label>
+                      <input 
+                        type="text"
+                        name="property_type"
+                        value={formData.property_type}
+                        onChange={handleInputChange}
+                        className="w-full bg-[#18181A] border border-white/10 rounded-xl px-4 py-2.5 text-xs text-zinc-300 focus:outline-none focus:border-[#00D1B2]"
+                      />
+                    </div>
+                    {/* Tipo de Mercado */}
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Tipo de mercado</label>
+                      <select 
+                        name="market_type"
+                        value={formData.market_type}
+                        onChange={handleInputChange}
+                        className="w-full bg-[#18181A] border border-white/10 rounded-xl px-4 py-2.5 text-xs text-zinc-300 focus:outline-none focus:border-[#00D1B2]"
+                      >
+                        <option value="urban">Urbano / Negocios</option>
+                        <option value="vacacional">Vacacional / Turismo</option>
+                      </select>
+                    </div>
+                    {/* Ingreso Mensual */}
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Ingreso mensual (USD)</label>
+                      <input 
+                        type="number"
+                        name="gross_income"
+                        value={formData.gross_income}
+                        onChange={handleInputChange}
+                        className="w-full bg-[#18181A] border border-white/10 rounded-xl px-4 py-2.5 text-xs text-zinc-300 focus:outline-none focus:border-[#00D1B2]"
+                      />
+                    </div>
+                    {/* Noches Ocupadas */}
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Noches ocupadas</label>
+                      <input 
+                        type="number"
+                        name="occupied_nights"
+                        value={formData.occupied_nights}
+                        onChange={handleInputChange}
+                        className="w-full bg-[#18181A] border border-white/10 rounded-xl px-4 py-2.5 text-xs text-zinc-300 focus:outline-none focus:border-[#00D1B2]"
+                      />
+                    </div>
+                    {/* Noches Disponibles */}
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Noches disponibles</label>
+                      <input 
+                        type="number"
+                        name="available_nights"
+                        value={formData.available_nights}
+                        onChange={handleInputChange}
+                        className="w-full bg-[#18181A] border border-white/10 rounded-xl px-4 py-2.5 text-xs text-zinc-300 focus:outline-none focus:border-[#00D1B2]"
+                      />
+                    </div>
+                    {/* Gastos Aproximados */}
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Gastos aproximados (USD)</label>
+                      <input 
+                        type="number"
+                        name="approximate_expenses"
+                        value={formData.approximate_expenses}
+                        onChange={handleInputChange}
+                        className="w-full bg-[#18181A] border border-white/10 rounded-xl px-4 py-2.5 text-xs text-zinc-300 focus:outline-none focus:border-[#00D1B2]"
+                      />
+                    </div>
+                    {/* Email */}
+                    <div className="flex flex-col gap-1.5 md:col-span-2 lg:col-span-3">
+                      <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Email registrado</label>
+                      <input 
+                        type="email"
+                        name="email"
+                        value={formData.email}
+                        onChange={handleInputChange}
+                        className="w-full bg-[#18181A] border border-white/10 rounded-xl px-4 py-2.5 text-xs text-zinc-300 focus:outline-none focus:border-[#00D1B2]"
+                      />
+                    </div>
                   </div>
                 </div>
 
-                <div className="flex flex-col sm:flex-row gap-4">
+                {/* 2. SECCIÓN: DATOS DE COSTOS DESGLOSADOS (NUEVOS E IMPORTANTES) */}
+                <div className="space-y-6">
+                  <h4 className="text-xs font-black text-[#00D1B2] uppercase tracking-widest flex items-center gap-2">
+                    <span>⚡</span> Costos Desglosados Necesarios
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {/* Comisión OTA */}
+                    <div className="flex flex-col gap-2">
+                      <label htmlFor="platfom_commission_premium" className="text-xs font-bold uppercase tracking-wider text-zinc-400 font-semibold">
+                        Comisión OTA / Plataformas (USD)
+                      </label>
+                      <input 
+                        type="number"
+                        id="platfom_commission_premium"
+                        name="platfom_commission"
+                        value={formData.platfom_commission}
+                        onChange={handleInputChange}
+                        placeholder="Ej. 450"
+                        className="w-full bg-[#18181A] border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-[#00D1B2]"
+                      />
+                    </div>
+                    {/* Limpieza */}
+                    <div className="flex flex-col gap-2">
+                      <label htmlFor="cleaning_cost_premium" className="text-xs font-bold uppercase tracking-wider text-zinc-400 font-semibold">
+                        Limpieza Total (USD)
+                      </label>
+                      <input 
+                        type="number"
+                        id="cleaning_cost_premium"
+                        name="cleaning_cost"
+                        value={formData.cleaning_cost}
+                        onChange={handleInputChange}
+                        placeholder="Ej. 300"
+                        className="w-full bg-[#18181A] border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-[#00D1B2]"
+                      />
+                    </div>
+                    {/* Servicios */}
+                    <div className="flex flex-col gap-2">
+                      <label htmlFor="services_cost_premium" className="text-xs font-bold uppercase tracking-wider text-zinc-400 font-semibold">
+                        Servicios Básicos / Gas / Luz (USD)
+                      </label>
+                      <input 
+                        type="number"
+                        id="services_cost_premium"
+                        name="services_cost"
+                        value={formData.services_cost}
+                        onChange={handleInputChange}
+                        placeholder="Ej. 200"
+                        className="w-full bg-[#18181A] border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-[#00D1B2]"
+                      />
+                    </div>
+                    {/* Mantenimiento */}
+                    <div className="flex flex-col gap-2">
+                      <label htmlFor="maintenence_cost_premium" className="text-xs font-bold uppercase tracking-wider text-zinc-400 font-semibold">
+                        Mantenimiento / Reparaciones (USD)
+                      </label>
+                      <input 
+                        type="number"
+                        id="maintenence_cost_premium"
+                        name="maintenence_cost"
+                        value={formData.maintenence_cost}
+                        onChange={handleInputChange}
+                        placeholder="Ej. 150"
+                        className="w-full bg-[#18181A] border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-[#00D1B2]"
+                      />
+                    </div>
+                    {/* Impuestos */}
+                    <div className="flex flex-col gap-2">
+                      <label htmlFor="tax_cost_premium" className="text-xs font-bold uppercase tracking-wider text-zinc-400 font-semibold">
+                        Impuestos y Licencias (USD)
+                      </label>
+                      <input 
+                        type="number"
+                        id="tax_cost_premium"
+                        name="tax_cost"
+                        value={formData.tax_cost}
+                        onChange={handleInputChange}
+                        placeholder="Ej. 250"
+                        className="w-full bg-[#18181A] border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-[#00D1B2]"
+                      />
+                    </div>
+                    {/* Otros Gastos */}
+                    <div className="flex flex-col gap-2">
+                      <label htmlFor="Hidden_cost_premium" className="text-xs font-bold uppercase tracking-wider text-zinc-400 font-semibold">
+                        Otros Gastos Ocultos (USD)
+                      </label>
+                      <input 
+                        type="number"
+                        id="Hidden_cost_premium"
+                        name="Hidden_cost"
+                        value={formData.Hidden_cost}
+                        onChange={handleInputChange}
+                        placeholder="Ej. 50"
+                        className="w-full bg-[#18181A] border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-[#00D1B2]"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex flex-col sm:flex-row gap-4 border-t border-white/5 pt-6 mt-4 w-full">
                   <button 
                     type="button"
-                    onClick={() => {
-                      // Simular completar y desbloquear
-                      setShowPlaceholderForm(false);
-                      setIsUnlocked(true);
-                    }}
-                    className="bg-[#00D1B2] hover:bg-[#00D1B2]/90 text-[#0B0B0C] font-extrabold text-xs md:text-sm uppercase tracking-widest px-8 py-3.5 rounded-full shadow-lg transition-all duration-300"
+                    onClick={handlePremiumSubmit}
+                    className="flex-1 bg-gradient-to-r from-[#00D1B2] to-[#00FFD1] text-[#0B0B0C] font-black text-xs md:text-sm uppercase tracking-widest px-8 py-4 rounded-full shadow-lg transition-all duration-300 hover:scale-[1.02] flex items-center justify-center gap-2"
                   >
-                    Simular Pago / Completado
+                    <span>Completar Auditoría Completa 🚀</span>
                   </button>
                   <button 
                     type="button"
                     onClick={() => setShowPlaceholderForm(false)}
-                    className="px-6 py-3.5 bg-white/5 hover:bg-white/10 text-white border border-white/10 text-xs font-bold uppercase tracking-wider rounded-full transition-all"
+                    className="px-6 py-4 bg-white/5 hover:bg-white/10 text-white border border-white/10 text-xs font-bold uppercase tracking-wider rounded-full transition-all"
                   >
                     Volver al Reporte
                   </button>
@@ -2788,7 +3002,7 @@ function AuditoriaFormContent() {
           <div className="absolute -top-40 -right-40 w-96 h-96 bg-[#00D1B2]/5 rounded-full blur-[100px] pointer-events-none"></div>
           <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-[#00D1B2]/5 rounded-full blur-[100px] pointer-events-none"></div>
           
-          {currentStep === 5 ? (
+          {isFetchingReport || isSubmitting ? (
             <div className="min-h-[400px] flex flex-col items-center justify-center p-6 text-center animate-in fade-in duration-500">
               <div className="relative w-20 h-20 mb-6 flex items-center justify-center mx-auto">
                 <div className="w-12 h-12 border-4 border-[#00D1B2]/20 border-t-[#00D1B2] rounded-full animate-spin"></div>
@@ -2927,69 +3141,59 @@ function AuditoriaFormContent() {
               </div>
             )}
 
-            {/* PASO 2: OPERACIÓN */}
+            {/* PASO 2: DIAGNÓSTICO RÁPIDO */}
             {currentStep === 2 && (
               <div className="space-y-6 animate-in fade-in duration-300">
                 <div className="border-b border-white/5 pb-4 mb-4">
                   <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                    <span className="text-[#00D1B2] font-black">02.</span> Operación del Período / Último Mes
+                    <span className="text-[#00D1B2] font-black">02.</span> Diagnóstico Rápido de la Propiedad
                   </h3>
-                  <p className="text-xs text-zinc-500 mt-1">Ingresa el tamaño operativo y el nivel de ocupación de tu unidad en el período evaluado.</p>
+                  <p className="text-xs text-zinc-500 mt-1">
+                    Ingresa las cifras financieras y de ocupación aproximadas de tu propiedad para evaluar su salud operativa.
+                  </p>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-                  {/* Max Guest */}
-                  <div className="flex flex-col gap-2">
-                    <label htmlFor="Max_guest" className="text-xs font-bold uppercase tracking-wider text-zinc-400">
-                      Capacidad Máx. Huéspedes
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Ingreso Mensual */}
+                  <div className="flex flex-col gap-2 bg-[#18181A] p-4 rounded-xl border border-white/5">
+                    <label htmlFor="gross_income" className="text-xs font-bold uppercase tracking-wider text-[#00D1B2]">
+                      INGRESO MENSUAL ESTIMADO (USD)
                     </label>
-                    <input
-                      type="number"
-                      id="Max_guest"
-                      name="Max_guest"
-                      min="1"
-                      max="100"
-                      value={formData.Max_guest}
-                      onChange={handleInputChange}
-                      onFocus={handleInputFocus}
-                      className="w-full bg-[#18181A] border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-[#00D1B2] transition-all"
-                    />
+                    <div className="relative flex items-center mt-1">
+                      <span className="absolute left-4 text-zinc-500 font-bold">$</span>
+                      <input
+                        type="number"
+                        id="gross_income"
+                        name="gross_income"
+                        min="0"
+                        value={formData.gross_income}
+                        onChange={handleInputChange}
+                        onFocus={handleInputFocus}
+                        className="w-full bg-[#0B0B0C] border border-white/10 rounded-lg pl-8 pr-4 py-3 text-base text-white focus:outline-none focus:border-[#00D1B2] transition-all font-mono"
+                      />
+                    </div>
+                    <span className="text-[10px] text-zinc-500">Suma total aproximada cobrada en reservas este mes.</span>
                   </div>
 
-                  {/* Bedrooms */}
-                  <div className="flex flex-col gap-2">
-                    <label htmlFor="bedrooms" className="text-xs font-bold uppercase tracking-wider text-zinc-400">
-                      Habitaciones (Dormitorios)
+                  {/* Gastos Aproximados */}
+                  <div className="flex flex-col gap-2 bg-[#18181A] p-4 rounded-xl border border-white/5">
+                    <label htmlFor="approximate_expenses" className="text-xs font-bold uppercase tracking-wider text-[#00D1B2]">
+                      GASTOS OPERATIVOS APROXIMADOS (USD)
                     </label>
-                    <input
-                      type="number"
-                      id="bedrooms"
-                      name="bedrooms"
-                      min="0"
-                      max="50"
-                      value={formData.bedrooms}
-                      onChange={handleInputChange}
-                      onFocus={handleInputFocus}
-                      className="w-full bg-[#18181A] border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-[#00D1B2] transition-all"
-                    />
-                  </div>
-
-                  {/* Bathrooms */}
-                  <div className="flex flex-col gap-2">
-                    <label htmlFor="bathrooms" className="text-xs font-bold uppercase tracking-wider text-zinc-400">
-                      Cuartos de Baño Completos
-                    </label>
-                    <input
-                      type="number"
-                      id="bathrooms"
-                      name="bathrooms"
-                      min="0"
-                      max="50"
-                      value={formData.bathrooms}
-                      onChange={handleInputChange}
-                      onFocus={handleInputFocus}
-                      className="w-full bg-[#18181A] border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-[#00D1B2] transition-all"
-                    />
+                    <div className="relative flex items-center mt-1">
+                      <span className="absolute left-4 text-zinc-500 font-bold">$</span>
+                      <input
+                        type="number"
+                        id="approximate_expenses"
+                        name="approximate_expenses"
+                        min="0"
+                        value={formData.approximate_expenses}
+                        onChange={handleInputChange}
+                        onFocus={handleInputFocus}
+                        className="w-full bg-[#0B0B0C] border border-white/10 rounded-lg pl-8 pr-4 py-3 text-base text-white focus:outline-none focus:border-[#00D1B2] transition-all font-mono"
+                      />
+                    </div>
+                    <span className="text-[10px] text-zinc-500">Suma estimada de todos tus costos mensuales de operación.</span>
                   </div>
                 </div>
 
@@ -3010,7 +3214,7 @@ function AuditoriaFormContent() {
                       onChange={handleInputChange}
                       className="w-full h-1.5 bg-[#18181A] rounded-lg appearance-none cursor-pointer accent-[#00D1B2] focus:outline-none"
                     />
-                    <span className="text-[10px] text-zinc-500">Número de noches con reservas pagadas en el mes.</span>
+                    <span className="text-[10px] text-zinc-500">Número de noches ocupadas estimadas en el mes.</span>
                   </div>
 
                   {/* Available Nights */}
@@ -3029,270 +3233,39 @@ function AuditoriaFormContent() {
                       onChange={handleInputChange}
                       className="w-full h-1.5 bg-[#18181A] rounded-lg appearance-none cursor-pointer accent-[#00D1B2] focus:outline-none"
                     />
-                    <span className="text-[10px] text-zinc-500">Noches totales publicadas y listas para recibir huéspedes en el mes.</span>
+                    <span className="text-[10px] text-zinc-500">Noches totales que estuvo disponible tu unidad.</span>
                   </div>
                 </div>
               </div>
             )}
 
-            {/* PASO 3: INGRESOS Y COSTOS */}
+            {/* PASO 3: EMAIL */}
             {currentStep === 3 && (
               <div className="space-y-6 animate-in fade-in duration-300">
                 <div className="border-b border-white/5 pb-4 mb-4">
                   <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                    <span className="text-[#00D1B2] font-black">03.</span> Ingresos y Estructura de Costos del Período (USD)
+                    <span className="text-[#00D1B2] font-black">03.</span> Registro de Contacto
                   </h3>
-                  <p className="text-xs text-zinc-500 mt-1">Cifras financieras correspondientes al período / mes evaluado para detectar fugas operativas.</p>
+                  <p className="text-xs text-zinc-500 mt-1">
+                    Ingresa tu correo electrónico para recibir una copia del diagnóstico y guardar tu sesión.
+                  </p>
                 </div>
 
-                {/* Gross Income */}
-                <div className="flex flex-col gap-2 bg-[#18181A] p-4 rounded-xl border border-white/5">
-                  <label htmlFor="gross_income" className="text-xs font-bold uppercase tracking-wider text-[#00D1B2]">
-                    INGRESO BRUTO DEL PERÍODO (GROSS INCOME)
+                <div className="flex flex-col gap-2">
+                  <label htmlFor="email" className="text-xs font-bold uppercase tracking-wider text-zinc-400">
+                    Correo Electrónico <span className="text-[#00D1B2]">*</span>
                   </label>
-                  <div className="relative flex items-center">
-                    <span className="absolute left-4 text-zinc-500 font-bold">$</span>
-                    <input
-                      type="number"
-                      id="gross_income"
-                      name="gross_income"
-                      min="0"
-                      value={formData.gross_income}
-                      onChange={handleInputChange}
-                      onFocus={handleInputFocus}
-                      className="w-full bg-[#0B0B0C] border border-white/10 rounded-lg pl-8 pr-4 py-3 text-base text-white focus:outline-none focus:border-[#00D1B2] transition-all font-mono"
-                    />
-                  </div>
-                  <span className="text-[10px] text-zinc-500">Suma total cobrada en reservas (tarifas de reserva + tarifas de limpieza y cargos).</span>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
-                  {/* Platform Commission */}
-                  <div className="flex flex-col gap-2">
-                    <label htmlFor="platfom_commission" className="text-xs font-bold uppercase tracking-wider text-zinc-400">
-                      Comisión de Plataformas (USD)
-                    </label>
-                    <div className="relative flex items-center">
-                      <span className="absolute left-4 text-zinc-500">$</span>
-                      <input
-                        type="number"
-                        id="platfom_commission"
-                        name="platfom_commission"
-                        min="0"
-                        value={formData.platfom_commission}
-                        onChange={handleInputChange}
-                        onFocus={handleInputFocus}
-                        className="w-full bg-[#18181A] border border-white/10 rounded-lg pl-8 pr-4 py-2.5 text-sm text-white focus:outline-none focus:border-[#00D1B2] font-mono"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Cleaning Cost */}
-                  <div className="flex flex-col gap-2">
-                    <label htmlFor="cleaning_cost" className="text-xs font-bold uppercase tracking-wider text-zinc-400">
-                      Costo Total de Limpiezas (cleaning_cost)
-                    </label>
-                    <div className="relative flex items-center">
-                      <span className="absolute left-4 text-zinc-500">$</span>
-                      <input
-                        type="number"
-                        id="cleaning_cost"
-                        name="cleaning_cost"
-                        min="0"
-                        value={formData.cleaning_cost}
-                        onChange={handleInputChange}
-                        onFocus={handleInputFocus}
-                        className="w-full bg-[#18181A] border border-white/10 rounded-lg pl-8 pr-4 py-2.5 text-sm text-white focus:outline-none focus:border-[#00D1B2] font-mono"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Services Cost */}
-                  <div className="flex flex-col gap-2">
-                    <label htmlFor="services_cost" className="text-xs font-bold uppercase tracking-wider text-zinc-400">
-                      Servicios Básicos (services_cost)
-                    </label>
-                    <div className="relative flex items-center">
-                      <span className="absolute left-4 text-zinc-500">$</span>
-                      <input
-                        type="number"
-                        id="services_cost"
-                        name="services_cost"
-                        min="0"
-                        value={formData.services_cost}
-                        onChange={handleInputChange}
-                        onFocus={handleInputFocus}
-                        className="w-full bg-[#18181A] border border-white/10 rounded-lg pl-8 pr-4 py-2.5 text-sm text-white focus:outline-none focus:border-[#00D1B2] font-mono"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Maintenance Cost */}
-                  <div className="flex flex-col gap-2">
-                    <label htmlFor="maintenence_cost" className="text-xs font-bold uppercase tracking-wider text-zinc-400">
-                      Mantenimiento y Reparaciones (maintenence_cost)
-                    </label>
-                    <div className="relative flex items-center">
-                      <span className="absolute left-4 text-zinc-500">$</span>
-                      <input
-                        type="number"
-                        id="maintenence_cost"
-                        name="maintenence_cost"
-                        min="0"
-                        value={formData.maintenence_cost}
-                        onChange={handleInputChange}
-                        onFocus={handleInputFocus}
-                        className="w-full bg-[#18181A] border border-white/10 rounded-lg pl-8 pr-4 py-2.5 text-sm text-white focus:outline-none focus:border-[#00D1B2] font-mono"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Tax Cost */}
-                  <div className="flex flex-col gap-2">
-                    <label htmlFor="tax_cost" className="text-xs font-bold uppercase tracking-wider text-zinc-400">
-                      Impuestos y Licencias (tax_cost)
-                    </label>
-                    <div className="relative flex items-center">
-                      <span className="absolute left-4 text-zinc-500">$</span>
-                      <input
-                        type="number"
-                        id="tax_cost"
-                        name="tax_cost"
-                        min="0"
-                        value={formData.tax_cost}
-                        onChange={handleInputChange}
-                        onFocus={handleInputFocus}
-                        className="w-full bg-[#18181A] border border-white/10 rounded-lg pl-8 pr-4 py-2.5 text-sm text-white focus:outline-none focus:border-[#00D1B2] font-mono"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Hidden Cost */}
-                  <div className="flex flex-col gap-2">
-                    <label htmlFor="Hidden_cost" className="text-xs font-bold uppercase tracking-wider text-zinc-400">
-                      Otros Gastos o Costos Ocultos (Hidden_cost)
-                    </label>
-                    <div className="relative flex items-center">
-                      <span className="absolute left-4 text-zinc-500">$</span>
-                      <input
-                        type="number"
-                        id="Hidden_cost"
-                        name="Hidden_cost"
-                        min="0"
-                        value={formData.Hidden_cost}
-                        onChange={handleInputChange}
-                        onFocus={handleInputFocus}
-                        className="w-full bg-[#18181A] border border-white/10 rounded-lg pl-8 pr-4 py-2.5 text-sm text-white focus:outline-none focus:border-[#00D1B2] font-mono"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* PASO 4: ENTORNO (PREGUNTAS DEL FORM CORTO EXACTAS) */}
-            {currentStep === 4 && (
-              <div className="space-y-6 animate-in fade-in duration-300">
-                <div className="border-b border-white/5 pb-4 mb-4">
-                  <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                    <span className="text-[#00D1B2] font-black">04.</span> Métricas Cualitativas de Percepción
-                  </h3>
-                  <p className="text-xs text-zinc-500 mt-1">Responde con tu percepción para adaptar con total precisión el algoritmo de Risk Radar.</p>
-                </div>
-
-                {/* 1. Stability Perception */}
-                <div className="flex flex-col gap-3">
-                  <label className="text-xs font-bold uppercase tracking-wider text-zinc-400">
-                    ¿Comparado con el mes anterior, tus gastos operativos...?
-                  </label>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {[
-                      'Bajaron', 
-                      'Se mantuvieron', 
-                      'Subieron un poco',
-                      'Subieron bastante'
-                    ].map((val) => {
-                      const isSelected = formData.stability_perception === val;
-                      return (
-                        <button
-                          key={val}
-                          type="button"
-                          onClick={() => handleSelectPerception('stability_perception', val)}
-                          className={`py-3.5 px-4 rounded-xl border text-xs font-bold transition-all text-left flex items-center justify-between ${
-                            isSelected
-                              ? 'bg-[#00D1B2]/10 border-[#00D1B2] text-[#00D1B2] shadow-[0_0_15px_rgba(0,209,178,0.1)]'
-                              : 'bg-[#18181A] border-white/5 text-zinc-400 hover:border-white/20'
-                          }`}
-                        >
-                          <span>{val}</span>
-                          {isSelected && <span className="w-2 h-2 rounded-full bg-[#00D1B2]"></span>}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* 2. Risk Perception */}
-                <div className="flex flex-col gap-3">
-                  <label className="text-xs font-bold uppercase tracking-wider text-zinc-400">
-                    Hoy sientes que tu operación está...?
-                  </label>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {[
-                      'Totalmente bajo control', 
-                      'Ajustada pero manejable', 
-                      'Cerca del límite',
-                      'Improvisada'
-                    ].map((val) => {
-                      const isSelected = formData.risk_perception === val;
-                      return (
-                        <button
-                          key={val}
-                          type="button"
-                          onClick={() => handleSelectPerception('risk_perception', val)}
-                          className={`py-3.5 px-4 rounded-xl border text-xs font-bold transition-all text-left flex items-center justify-between ${
-                            isSelected
-                              ? 'bg-[#00D1B2]/10 border-[#00D1B2] text-[#00D1B2] shadow-[0_0_15px_rgba(0,209,178,0.1)]'
-                              : 'bg-[#18181A] border-white/5 text-zinc-400 hover:border-white/20'
-                          }`}
-                        >
-                          <span>{val}</span>
-                          {isSelected && <span className="w-2 h-2 rounded-full bg-[#00D1B2]"></span>}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* 3. Major Concern (no_major_risk) */}
-                <div className="flex flex-col gap-3">
-                  <label className="text-xs font-bold uppercase tracking-wider text-zinc-400">
-                    ¿Qué es lo que más te preocupa ahora mismo?
-                  </label>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    {[
-                      'Que los gastos se me vayan de las manos',
-                      'Estar tomando decisiones a ciegas',
-                      'Nada en particular (por ahora)'
-                    ].map((val) => {
-                      const isSelected = formData.no_major_risk === val;
-                      return (
-                        <button
-                          key={val}
-                          type="button"
-                          onClick={() => handleSelectPerception('no_major_risk', val)}
-                          className={`py-3.5 px-3 rounded-xl border text-[11px] font-bold transition-all text-left flex items-center justify-between ${
-                            isSelected
-                              ? 'bg-[#00D1B2]/10 border-[#00D1B2] text-[#00D1B2] shadow-[0_0_15px_rgba(0,209,178,0.1)]'
-                              : 'bg-[#18181A] border-white/5 text-zinc-400 hover:border-white/20'
-                          }`}
-                        >
-                          <span className="leading-tight pr-2">{val}</span>
-                          {isSelected && <span className="w-2 h-2 rounded-full bg-[#00D1B2] flex-shrink-0"></span>}
-                        </button>
-                      );
-                    })}
-                  </div>
+                  <input
+                    type="email"
+                    id="email"
+                    name="email"
+                    required
+                    value={formData.email}
+                    onChange={handleInputChange}
+                    placeholder="Ej. usuario@propiqdata.com"
+                    className="w-full bg-[#18181A] border border-white/10 rounded-xl px-4 py-3.5 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-[#00D1B2] focus:ring-1 focus:ring-[#00D1B2] transition-all font-sans"
+                  />
+                  <span className="text-[10px] text-zinc-500 mt-1">Nunca compartiremos tus datos con terceros.</span>
                 </div>
               </div>
             )}
@@ -3319,7 +3292,7 @@ function AuditoriaFormContent() {
                 <div /> // Spacer
               )}
 
-              {currentStep < 4 ? (
+              {currentStep < 3 ? (
                 <button
                   type="button"
                   onClick={nextStep}
