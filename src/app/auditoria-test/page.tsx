@@ -277,6 +277,8 @@ function AuditoriaFormContent() {
   const [betaEmail, setBetaEmail] = useState('');
   const [isBetaSubmitted, setIsBetaSubmitted] = useState(false);
   const [isBetaModalOpen, setIsBetaModalOpen] = useState(false);
+  const [isUnlocked, setIsUnlocked] = useState(false);
+  const [showPlaceholderForm, setShowPlaceholderForm] = useState(false);
 
   // 1. INTERFAZ Y ESTADO DEL FORMULARIO CON TIPOS Y VALORES PREVIOS
   interface FormDataState {
@@ -1916,11 +1918,66 @@ function AuditoriaFormContent() {
               </div>
             </div>
 
-            {/* SEPARADOR ELEGANTE ENTRE CABECERA Y FASES */}
-            <div className="w-full pt-8 mt-12 mb-8 border-t border-white/5 flex flex-col items-center gap-1 text-center select-none">
-              <span className="text-[10px] font-black tracking-[0.3em] text-white uppercase">
-                SECUENCIA DE AUDITORÍA OPERATIVA
-              </span>
+            {/* SEPARADOR ELEGANTE ENTRE CABECERA Y FASES Y EL RESTO DEL REPORTE BLURREADO */}
+            {showPlaceholderForm ? (
+              /* FORMULARIO LARGO / AUDITORÍA COMPLETA PLACEHOLDER */
+              <div className="w-full bg-[#121318] border border-[#00D1B2]/30 rounded-3xl p-8 md:p-12 text-center flex flex-col items-center justify-center gap-6 animate-in fade-in duration-500 shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
+                <div className="w-12 h-12 rounded-full bg-[#00D1B2]/10 text-[#00D1B2] flex items-center justify-center font-black text-xl mb-2">
+                  📋
+                </div>
+                <h3 className="text-xl md:text-2xl font-black text-white uppercase tracking-tight">
+                  Formulario de Auditoría Completa
+                </h3>
+                <p className="text-zinc-400 text-xs md:text-sm font-semibold max-w-lg leading-relaxed">
+                  Aquí se mostrará el formulario largo para recopilar los datos operacionales detallados y las integraciones del canal para generar la auditoría premium.
+                </p>
+                
+                <div className="w-full max-w-md border border-white/5 bg-black/20 p-6 rounded-2xl flex flex-col gap-4 text-left">
+                  <div className="flex flex-col gap-1.5">
+                    <span className="text-[10px] text-zinc-500 font-extrabold uppercase tracking-widest">Ejemplo de campos futuros</span>
+                    <div className="h-2 w-24 bg-white/10 rounded" />
+                    <div className="h-8 w-full bg-white/5 rounded border border-white/10" />
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <div className="h-2 w-16 bg-white/10 rounded" />
+                    <div className="h-8 w-full bg-white/5 rounded border border-white/10" />
+                  </div>
+                </div>
+
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <button 
+                    type="button"
+                    onClick={() => {
+                      // Simular completar y desbloquear
+                      setShowPlaceholderForm(false);
+                      setIsUnlocked(true);
+                    }}
+                    className="bg-[#00D1B2] hover:bg-[#00D1B2]/90 text-[#0B0B0C] font-extrabold text-xs md:text-sm uppercase tracking-widest px-8 py-3.5 rounded-full shadow-lg transition-all duration-300"
+                  >
+                    Simular Pago / Completado
+                  </button>
+                  <button 
+                    type="button"
+                    onClick={() => setShowPlaceholderForm(false)}
+                    className="px-6 py-3.5 bg-white/5 hover:bg-white/10 text-white border border-white/10 text-xs font-bold uppercase tracking-wider rounded-full transition-all"
+                  >
+                    Volver al Reporte
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="relative w-full">
+                {/* 
+                  Blurred Content Container
+                  If the report is not unlocked, we apply blur, low opacity, and prevent interactions.
+                */}
+                <div className={`transition-all duration-500 space-y-8 ${
+                  !isUnlocked ? 'filter blur-[7px] pointer-events-none select-none opacity-25' : ''
+                }`}>
+                  <div className="w-full pt-8 mt-12 mb-8 border-t border-white/5 flex flex-col items-center gap-1 text-center select-none">
+                    <span className="text-[10px] font-black tracking-[0.3em] text-white uppercase">
+                      SECUENCIA DE AUDITORÍA OPERATIVA
+                    </span>
               <div 
                 className="w-12 h-[2px] rounded-full transition-colors duration-300"
                 style={{ backgroundColor: narrative.accentColor }}
@@ -2685,6 +2742,45 @@ function AuditoriaFormContent() {
               </div>
             </div>
           </div>
+          {!isUnlocked && (
+            <div className="absolute inset-x-0 top-12 flex flex-col items-center justify-start z-30 px-4">
+              <div className="w-full max-w-2xl bg-gradient-to-b from-[#1A1D23]/95 to-[#0B0C10]/95 border border-[#00D1B2]/40 rounded-3xl p-8 md:p-10 shadow-[0_20px_60px_rgba(0,0,0,0.9)] relative overflow-hidden text-center flex flex-col items-center gap-6 backdrop-blur-md">
+                {/* Subtle decorative glow */}
+                <div className="absolute -right-24 -top-24 w-48 h-48 bg-[#00D1B2]/10 rounded-full blur-[45px] pointer-events-none" />
+                
+                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#00D1B2]/20 bg-[#00D1B2]/10 text-[#00D1B2] text-[10px] font-bold tracking-widest uppercase">
+                  🔒 CONTENIDO EXCLUSIVO
+                </div>
+                
+                <h3 className="text-xl md:text-2xl font-black text-white uppercase tracking-tight max-w-md leading-tight">
+                  Desbloquea la Secuencia de Auditoría Completa
+                </h3>
+                
+                <p className="text-zinc-400 text-xs md:text-sm font-semibold max-w-lg leading-relaxed">
+                  Ya identificamos que tu propiedad tiene un potencial de <span className="text-[#00D1B2] font-black">+{formattedHeroMensual} USD/mes</span> en riesgo. 
+                  Desbloquea el análisis completo de El Guardián, El Cazafugas y El Estratega para ver el desglose exacto de tus fugas y el plan de priorización.
+                </p>
+
+                {/* Buttons / Placeholder steps */}
+                <div className="flex flex-col items-center gap-3 w-full">
+                  <button 
+                    type="button"
+                    onClick={() => setShowPlaceholderForm(true)}
+                    className="w-full max-w-md bg-[#00D1B2] hover:bg-[#00D1B2]/90 text-[#0B0B0C] font-extrabold text-xs md:text-sm uppercase tracking-widest px-8 py-4 rounded-full shadow-lg transition-all duration-300 hover:scale-[1.02] font-sans"
+                  >
+                    Comenzar Auditoría Operativa Completa
+                  </button>
+                  
+                  <span className="text-[9px] font-extrabold text-neutral-500 uppercase tracking-widest mt-1">
+                    Acceso instantáneo · Auditoría 100% personalizada
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
       ) : (
         /* FORM CONTAINER PARA PASOS 1-4 Y CARGA */
         <div className="bg-[#121214] border border-white/5 rounded-2xl p-6 md:p-10 shadow-2xl relative overflow-hidden">
