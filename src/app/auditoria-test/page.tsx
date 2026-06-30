@@ -2699,7 +2699,7 @@ function AuditoriaFormContent() {
                 <div className="absolute inset-0 rounded-full bg-[#00D1B2]/5 blur-lg animate-pulse"></div>
               </div>
               <p className="text-sm font-extrabold text-[#00D1B2] uppercase tracking-[0.15em] mb-2">
-                Conectando con N8N...
+                Conectando con AIRLOCAL...
               </p>
               <p className="text-xs text-zinc-500 max-w-xs mx-auto leading-relaxed">
                 Estamos analizando tus datos reales para generar tu Reporte de Auditoría Premium 100% nítido y sin blur.
