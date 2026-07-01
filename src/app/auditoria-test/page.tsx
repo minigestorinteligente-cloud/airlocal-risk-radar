@@ -1764,10 +1764,10 @@ function AuditoriaFormContent() {
   };
 
   return (
-    <div className={`w-full mx-auto mb-12 ${currentStep === 5 ? 'max-w-none' : 'max-w-[800px]'}`}>
+    <div className={`w-full mx-auto mb-12 ${currentStep === 4 ? 'max-w-none' : 'max-w-[800px]'}`}>
       
-      {/* BARRA DE PROGRESO PREMIUM (Solo visible en pasos de llenado 1-4) */}
-      {currentStep <= 4 && (
+      {/* BARRA DE PROGRESO PREMIUM (Solo visible en pasos de llenado 1-3) */}
+      {currentStep <= 3 && (
         <div className="mb-10 px-4">
           <div className="flex justify-between items-center relative">
             {/* Línea de fondo */}
