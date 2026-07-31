@@ -1039,8 +1039,8 @@ pilarSalud = [
     maximo: 40,
     pct: (expenseScore / 40) * 100,
     metrica: `${expense_ratio}% expense ratio vs 40% ideal`,
-    estado: expenseScore >= 36 ? "SALUDABLE" : expenseScore >= 24 ? "ATENCIÓN" : "CRÍTICO",
-    color: expenseScore >= 36 ? "green" : expenseScore >= 24 ? "yellow" : "red",
+    estado: expense_ratio <= (input.market_type === "vacacional" ? 50 : 40) ? "SALUDABLE" : expense_ratio <= 60 ? "ATENCIÓN" : "CRÍTICO",
+    color: expense_ratio <= (input.market_type === "vacacional" ? 50 : 40) ? "green" : expense_ratio <= 60 ? "yellow" : "red",
     detalle: leak_analysis.total_recoverable_monthly > 0 
       ? `Fugas detectadas: +$${leak_analysis.total_recoverable_monthly}/mes`
       : "Todos los rubros están dentro del benchmark"
@@ -1059,7 +1059,7 @@ pilarSalud = [
     score: netMarginScore,
     maximo: 15,
     pct: (netMarginScore / 15) * 100,
-    metrica: `${netMarginPct.toFixed(1)}% net margin vs 15% ideal`,
+    metrica: `${Math.round(netMarginPct)}% net margin vs 15% ideal`,
     estado: netMarginScore >= 13 ? "SALUDABLE" : netMarginScore >= 9 ? "MONITOREO" : "CRÍTICO",
     color: netMarginScore >= 13 ? "green" : netMarginScore >= 9 ? "yellow" : "red"
   }
@@ -1161,7 +1161,11 @@ const cazafugas = {
       : p.pilar === "Eficiencia Operativa"
       ? "Sin ahorro cuantificable confirmado."
       : p.pilar === "Colchón Operativo"
-      ? "Área bajo control. Continúa monitoreando."
+      ? nochesParaPerdida <= 3
+        ? "Margen crítico. Cualquier caída en ocupación genera pérdida inmediata."
+        : nochesParaPerdida <= 7
+        ? "Margen ajustado. Evita gastos no planificados este mes."
+        : "Área bajo control. Continúa monitoreando."
       : "Área bajo control."
   })),
   
@@ -1177,8 +1181,8 @@ const cazafugas = {
   leak_analysis_contexto: {
     fugas_detectadas: leak_analysis.total_recoverable_monthly > 0,
     total_recoverable_monthly: leak_analysis.total_recoverable_monthly,
-    contribucion: leak_analysis.total_recoverable_monthly > 0 
-      ? `$${leak_analysis.total_recoverable_monthly} de los $${oportunidadTotalMensual} potencial viene de fugas operativas`
+    contribucion: leak_analysis.total_recoverable_monthly > 0
+      ? `$${leak_analysis.total_recoverable_monthly} de los $${Math.max(oportunidadTotalMensual, leak_analysis.total_recoverable_monthly)} potencial viene de fugas operativas`
       : "0 fugas detectadas. El potencial viene de crecimiento comercial."
   }
 };

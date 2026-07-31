@@ -207,7 +207,7 @@ const formatMetrica = (pilarName: string, metricaStr: string) => {
   }
 
   if (pilar.includes("rentabilidad") || pilar.includes("neto") || pilar.includes("utilidad")) {
-    const pctMatch = str.match(/(\d+)\s*%/g);
+    const pctMatch = str.match(/(\d+\.?\d*)\s*%/g);
     if (pctMatch && pctMatch.length >= 2) {
       return {
         line1: `${pctMatch[0]} de margen neto`,
