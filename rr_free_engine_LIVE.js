@@ -53,15 +53,32 @@ const break_even_nights = avg_price > 0 ? Math.round(total_costs / avg_price) : 
 const nochesParaPerdida = net_income > 0 ? Math.max(0, input.occupied_nights - break_even_nights) : 0;
 const netMarginPct = input.gross_income > 0 ? (net_income / input.gross_income) * 100 : 0;
 
-// 3. Estado de Salud
+// ── NUCLEO COMPARTIDO: Score de Salud (IDENTICO a RR_ENGINE_PREMIUM_25JUN) ──
+// Se calcula con agregados (los mismos que tiene el Free) para que Free y Premium
+// clasifiquen el estado con la MISMA formula y el estado no salte Free->Premium.
+const expenseScore = Math.max(0, Math.min(40, 40 - ((expense_ratio - 40) * 1.5)));
+const occupancyScore = Math.max(0, Math.min(25, (ocupacion_pct / occupancyTarget) * 25));
+const marginScore = Math.max(0, Math.min(20, (nochesParaPerdida / 10) * 20));
+const netMarginScore = Math.max(0, Math.min(15, (netMarginPct / 15) * 15));
+const scoreSalud = Math.round(expenseScore + occupancyScore + marginScore + netMarginScore);
+
+let riesgoFinanciero = 0;
+if (expense_ratio >= 80) { riesgoFinanciero += 40; }
+else if (expense_ratio >= 70) { riesgoFinanciero += 30; }
+else if (expense_ratio >= 60) { riesgoFinanciero += 20; }
+else if (expense_ratio >= 50) { riesgoFinanciero += 10; }
+if (net_income <= 0) { riesgoFinanciero += 40; }
+else if (netMarginPct < 10) { riesgoFinanciero += 20; }
+else if (netMarginPct < 20) { riesgoFinanciero += 10; }
+if (nochesParaPerdida <= 2) { riesgoFinanciero += 20; }
+else if (nochesParaPerdida <= 5) { riesgoFinanciero += 10; }
+const scoreFinal = Math.max(0, Math.min(100, scoreSalud - riesgoFinanciero));
+
+// 3. Estado de Salud — clasificacion UNIFICADA por scoreFinal (antes: umbrales propios)
 let tension;
-if (net_income <= 0 || nochesParaPerdida <= 2) {
-  tension = "CRITICO";
-} else if (expense_ratio >= 45 || nochesParaPerdida <= 7) {
-  tension = "VULNERABLE";
-} else {
-  tension = "SALUDABLE";
-}
+if (scoreFinal < 40) { tension = "CRITICO"; }
+else if (scoreFinal < 70) { tension = "VULNERABLE"; }
+else { tension = "SALUDABLE"; }
 
 // 4. VERSIÓN B FINAL - DETECCIÓN HÍBRIDA CON COMPETITIVE ADR
 const noches_objetivo = Math.round(input.available_nights * (occupancyTarget / 100));
@@ -337,9 +354,9 @@ const plan_accion_inteligente = {
 };
 
 const tacometro = {
-  score: 0,
-  score_final: 0,
-  riesgo_financiero: 0,
+  score: scoreSalud,
+  score_final: scoreFinal,
+  riesgo_financiero: riesgoFinanciero,
   simulador_what_if: {
     escenario_precio: "Disponible en el reporte Operativo.",
     escenario_limpieza: "Disponible en el reporte Operativo."

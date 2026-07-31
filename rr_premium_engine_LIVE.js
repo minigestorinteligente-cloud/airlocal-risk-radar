@@ -891,15 +891,12 @@ const simulador = {
 // 6.7 CABECERA PREMIUM — REFACTORIZADA COMO ESPEJO DEL RR_FREE
 // Usa tension y narrativa idénticos al Diagnóstico Inicial
 
-// Cálculo de tension (usando variables ya calculadas)
+// Cálculo de tension UNIFICADO por scoreFinal (antes: umbrales propios).
+// Ahora la cabecera coincide con el headline (que ya usa scoreFinal) y con el Free.
 let tension_cabecera;
-if (net_income <= 0 || nochesParaPerdida <= 2) {
-  tension_cabecera = "CRITICO";
-} else if (expense_ratio >= 45 || nochesParaPerdida <= 7) {
-  tension_cabecera = "VULNERABLE";
-} else {
-  tension_cabecera = "SALUDABLE";
-}
+if (scoreFinal < 40) { tension_cabecera = "CRITICO"; }
+else if (scoreFinal < 70) { tension_cabecera = "VULNERABLE"; }
+else { tension_cabecera = "SALUDABLE"; }
 
 // Narrativa de cabecera (usando tension)
 if (tension_cabecera === "CRITICO") {
