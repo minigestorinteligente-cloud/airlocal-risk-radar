@@ -207,7 +207,7 @@ const formatMetrica = (pilarName: string, metricaStr: string) => {
   }
 
   if (pilar.includes("rentabilidad") || pilar.includes("neto") || pilar.includes("utilidad")) {
-    const pctMatch = str.match(/(\d+)\s*%/g);
+    const pctMatch = str.match(/(\d+\.?\d*)\s*%/g);
     if (pctMatch && pctMatch.length >= 2) {
       return {
         line1: `${pctMatch[0]} de margen neto`,
@@ -266,7 +266,7 @@ function AuditoriaFormContent() {
   const [currentStep, setCurrentStep] = useState(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
-      if (params.get('status') || params.get('report_id')) return 5;
+      if (params.get('status') || params.get('report_id')) return 4;
     }
     return 1;
   });
@@ -925,8 +925,8 @@ function AuditoriaFormContent() {
       noches_restantes: 11,
       impact_text: `Podrías estar rescatando hasta <span class="text-[#00D1B2] font-extrabold">$808 USD</span> al mes (o <span class="text-[#00D1B2] font-extrabold">$9,696 USD</span> al año) con el plan de acción si nivelas tu ocupación a la Zona Óptima de Rentabilidad (60% del mercado).`,
       hero_titulo: "Potencial Económico Identificado",
-      hero_anual: "+$9,696 USD / año",
-      hero_mensual: "+$808 USD / mes",
+      hero_anual: 9696,
+      hero_mensual: 808,
       hero_descripcion: "AIRLOCAL detectó fugas y brechas que limitan tu potencial.",
       user_summary: {
         property_name: formData.property_name || "Domingo",
@@ -1186,6 +1186,7 @@ function AuditoriaFormContent() {
   const whatIf = activeReport.what_if || activeReport.tacometro?.simulador_what_if || productionJson.what_if || productionJson.tacometro.simulador_what_if;
   const percepcion = activeReport.seccion_percepcion || productionJson.seccion_percepcion;
   const radar = activeReport.radar_fugas || productionJson.radar_fugas;
+  const leakRadar = (activeReport.leak_analysis || {})?.radar || {};
   const planAccion = activeReport.plan_accion_inteligente || productionJson.plan_accion_inteligente;
   const cazafugas = activeReport.cazafugas || productionJson.cazafugas;
   const estratega = activeReport.estratega || productionJson.estratega || {};
@@ -1968,6 +1969,30 @@ function AuditoriaFormContent() {
 
       {currentStep === 4 && !isFetchingReport ? (
         /* PANTALLA 4: RESULTADOS CON REPORTE PREMIUM COMPLETO (NÍTIDO Y ACCIONABLE) - SIN TARJETA CONTENEDORA EXTERNA */
+        !hasN8nData && !statusFromUrl ? (
+          /* SIN DATOS: n8n no respondió y no hay URL params — estado de espera limpio */
+          <div className="flex flex-col items-center justify-center py-24 gap-6 text-center animate-in fade-in duration-500">
+            <div className="relative w-16 h-16 flex items-center justify-center">
+              <div className="w-10 h-10 border-2 border-[#00D1B2]/20 border-t-[#00D1B2] rounded-full animate-spin" />
+              <div className="absolute inset-0 rounded-full bg-[#00D1B2]/5 blur-lg animate-pulse" />
+            </div>
+            <div>
+              <p className="text-sm font-extrabold text-[#00D1B2] uppercase tracking-[0.15em] mb-2">
+                Tu diagnóstico está siendo procesado
+              </p>
+              <p className="text-xs text-zinc-500 max-w-xs mx-auto leading-relaxed">
+                Esto puede tomar unos segundos. Si la página no actualiza en 30 segundos, recárgala para ver tu reporte.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => window.location.reload()}
+              className="px-6 py-2.5 border border-[#00D1B2]/30 hover:border-[#00D1B2]/60 text-[#00D1B2] text-xs font-bold uppercase tracking-widest rounded-full transition-all"
+            >
+              Recargar página
+            </button>
+          </div>
+        ) : (
         <div className="space-y-8 animate-in fade-in zoom-in-95 duration-500 text-left w-full">
             
             {/* CABECERA DE RESUMEN INICIAL */}
@@ -2039,9 +2064,9 @@ function AuditoriaFormContent() {
                 </p>
               ) : (
                 (hasN8nData ? activeReportObj?.free?.impact_text : productionJson.free?.impact_text) !== "" && (
-                  <p 
+                  <p
                     className="text-zinc-400 text-sm leading-relaxed mb-6 font-medium"
-                    dangerouslySetInnerHTML={{ __html: (hasN8nData ? activeReportObj?.free?.impact_text : productionJson.free?.impact_text) || narrative.desc }}
+                    dangerouslySetInnerHTML={{ __html: ((hasN8nData ? activeReportObj?.free?.impact_text : productionJson.free?.impact_text) || narrative.desc).replace(/text-\[#[0-9A-Fa-f]{3,6}\]/g, narrative.accentText) }}
                   />
                 )
               )}
@@ -2092,7 +2117,7 @@ function AuditoriaFormContent() {
             {/* SEPARADOR ELEGANTE ENTRE CABECERA Y FASES Y EL RESTO DEL REPORTE BLURREADO */}
             {showPlaceholderForm ? (
               /* FORMULARIO LARGO / AUDITORÍA COMPLETA PREMIUM */
-              <div className="w-full bg-[#121318] border border-[#00D1B2]/30 rounded-3xl p-8 md:p-12 text-left flex flex-col gap-8 animate-in fade-in duration-500 shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
+              <div id="formulario-premium" className="w-full bg-[#121318] border border-[#00D1B2]/30 rounded-3xl p-8 md:p-12 text-left flex flex-col gap-8 animate-in fade-in duration-500 shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
                 <div className="border-b border-white/5 pb-4">
                   <span className="text-[10px] font-black text-[#00D1B2] uppercase tracking-[0.15em] block mb-1">AUDITORÍA OPERATIVA COMPLETA</span>
                   <h3 className="text-xl md:text-2xl font-black text-white uppercase tracking-tight">
@@ -2338,7 +2363,7 @@ function AuditoriaFormContent() {
                     onClick={handleOpenCheckout}
                     className="flex-1 bg-gradient-to-r from-[#00D1B2] to-[#00FFD1] text-[#0B0B0C] font-black text-xs md:text-sm uppercase tracking-widest px-8 py-4 rounded-full shadow-lg transition-all duration-300 hover:scale-[1.02] flex items-center justify-center gap-2"
                   >
-                    <span>Desbloquear análisis completo ($45 USD)</span>
+                    <span>Desbloquear análisis completo ($47 USD)</span>
                   </button>
                   <button 
                     type="button"
@@ -2739,10 +2764,12 @@ function AuditoriaFormContent() {
                       <div className="w-full flex flex-col lg:flex-row gap-8 p-6 md:p-8 rounded-2xl bg-[#0E1218]/60 border border-[#161B26] items-center lg:items-stretch">
                         {/* Columna Izquierda: Radar (45% width) */}
                         <div className="w-full lg:w-[45%] flex items-center justify-center min-w-0 shrink-0">
-                          <LeakRadar 
+                          <LeakRadar
                             tusCostosPct={radar?.tus_costos_pct}
                             benchmarkIdealPct={radar?.benchmark_ideal_pct}
                             labels={radar?.labels}
+                            actualPctRevenue={leakRadar?.actual_pct_of_revenue}
+                            benchmarkPctRevenue={leakRadar?.benchmark_pct}
                             showEfficientBox={false}
                           />
                         </div>
@@ -3152,7 +3179,12 @@ function AuditoriaFormContent() {
                 <div className="flex flex-col items-center gap-3 w-full">
                   <button 
                     type="button"
-                    onClick={() => setShowPlaceholderForm(true)}
+                    onClick={() => {
+                      setShowPlaceholderForm(true);
+                      setTimeout(() => {
+                        document.getElementById('formulario-premium')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                      }, 80);
+                    }}
                     className="w-full max-w-md bg-[#00D1B2] hover:bg-[#00D1B2]/90 text-[#0B0B0C] font-extrabold text-xs md:text-sm uppercase tracking-widest px-8 py-4 rounded-full shadow-lg transition-all duration-300 hover:scale-[1.02] font-sans"
                   >
                     Ver mi desglose exacto
@@ -3168,6 +3200,7 @@ function AuditoriaFormContent() {
         </div>
       )}
     </div>
+        )
       ) : (
         /* FORM CONTAINER PARA PASOS 1-4 Y CARGA */
         <div className="bg-[#121214] border border-white/5 rounded-2xl p-6 md:p-10 shadow-2xl relative overflow-hidden">
@@ -3703,7 +3736,7 @@ function AuditoriaFormContent() {
               {/* Price Tag */}
               <div className="w-full bg-white border border-zinc-200 rounded-2xl p-5 mb-6 text-center shadow-[0_4px_12px_rgba(0,0,0,0.02)]">
                 <span className="text-zinc-500 text-xs font-semibold block mb-0.5 uppercase tracking-wider">TOTAL A PAGAR</span>
-                <span className="text-3xl font-black text-[#003087] tracking-tight block mb-2">$45,00 USD</span>
+                <span className="text-3xl font-black text-[#003087] tracking-tight block mb-2">$47,00 USD</span>
                 <span 
                   onClick={() => {
                     setAccessCode('BETA2026');

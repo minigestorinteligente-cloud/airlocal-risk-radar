@@ -19,7 +19,7 @@ export default function LandingPage() {
           <div>AIRLOCAL <span className="text-zinc-500 font-medium ml-2">| Risk Radar</span></div>
         </div>
         <Link 
-          href="/diagnostico"
+          href="/auditoria-test"
           className="hidden md:inline-flex items-center justify-center px-7 py-3 bg-[#00FFD1] text-[#0B0B0C] text-xs font-bold uppercase tracking-widest transition-all hover:bg-[#00e5bc] rounded-full shadow-[0_4px_14px_rgba(0,255,209,0.25)]"
         >
           Hacer diagnóstico gratis
@@ -122,7 +122,7 @@ export default function LandingPage() {
           {/* CTA Hero */}
           <div className="flex flex-col items-center animate-fade-in-up" style={{ opacity: 0, animationDelay: '0.6s' }}>
             <Link 
-              href="/diagnostico"
+              href="/auditoria-test"
               className="inline-flex items-center justify-center px-8 md:px-12 py-5 bg-[#00FFD1] text-[#0B0B0C] text-[15px] sm:text-base font-black uppercase tracking-widest transition-all hover:bg-[#00e5bc] rounded-full shadow-[0_8px_30px_rgba(0,255,209,0.3)] hover:shadow-[0_12px_40px_rgba(0,255,209,0.4)] mb-4 transform hover:-translate-y-1"
             >
               VER MI DIAGNÓSTICO AHORA →
@@ -224,7 +224,7 @@ export default function LandingPage() {
           {/* CTA SECCIÓN */}
           <div className="flex justify-center mt-16">
             <Link 
-              href="/diagnostico"
+              href="/auditoria-test"
               className="inline-flex items-center justify-center px-12 py-6 bg-[#00FFD1] text-[#0B0B0C] text-[15px] sm:text-base font-black uppercase tracking-widest transition-all hover:bg-[#00e5bc] rounded-full shadow-[0_8px_30px_rgba(0,255,209,0.3)] hover:shadow-[0_12px_40px_rgba(0,255,209,0.4)] transform hover:-translate-y-1"
             >
               VER MI DIAGNÓSTICO AHORA →
@@ -352,7 +352,7 @@ export default function LandingPage() {
           {/* CTA SECCIÓN */}
           <div className="flex flex-col items-center opacity-0 animate-fade-up" style={{ animationDelay: '1.2s' }}>
             <Link 
-              href="/diagnostico"
+              href="/auditoria-test"
               className="inline-flex items-center justify-center px-12 py-6 bg-[#00FFD1] text-[#0B0B0C] text-[15px] sm:text-base font-black uppercase tracking-widest transition-all hover:bg-[#00e5bc] rounded-full shadow-[0_15px_40px_rgba(0,255,209,0.3)] hover:shadow-[0_20px_50px_rgba(0,255,209,0.4)] mb-6 transform hover:scale-105"
             >
               VER MI DIAGNÓSTICO AHORA →
@@ -454,7 +454,7 @@ export default function LandingPage() {
           {/* CTA FINAL DE SECCIÓN */}
           <div className="flex flex-col items-center">
             <Link 
-              href="/diagnostico"
+              href="/auditoria-test"
               className="inline-flex items-center justify-center px-12 py-6 bg-[#00FFD1] text-[#0B0B0C] text-[15px] sm:text-base font-black uppercase tracking-widest transition-all hover:bg-[#00e5bc] rounded-full shadow-[0_15px_40px_rgba(0,255,209,0.3)] hover:shadow-[0_20px_50px_rgba(0,255,209,0.4)] mb-6 transform hover:scale-105"
             >
               VER MI DIAGNÓSTICO AHORA →
@@ -521,7 +521,7 @@ export default function LandingPage() {
           {/* CTA FINAL */}
           <div className="flex flex-col items-center">
             <Link 
-              href="/diagnostico"
+              href="/auditoria-test"
               className="inline-flex items-center justify-center px-12 py-6 bg-[#00FFD1] text-[#0B0B0C] text-lg font-black uppercase tracking-widest transition-all hover:bg-[#00e5bc] rounded-full shadow-[0_15px_50px_rgba(0,255,209,0.4)] hover:shadow-[0_20px_60px_rgba(0,255,209,0.5)] mb-8 transform hover:scale-105"
             >
               VER MI DIAGNÓSTICO AHORA →
