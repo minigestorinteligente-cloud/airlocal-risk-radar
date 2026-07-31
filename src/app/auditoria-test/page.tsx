@@ -266,7 +266,7 @@ function AuditoriaFormContent() {
   const [currentStep, setCurrentStep] = useState(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
-      if (params.get('status') || params.get('report_id')) return 5;
+      if (params.get('status') || params.get('report_id')) return 4;
     }
     return 1;
   });
@@ -2093,7 +2093,7 @@ function AuditoriaFormContent() {
             {/* SEPARADOR ELEGANTE ENTRE CABECERA Y FASES Y EL RESTO DEL REPORTE BLURREADO */}
             {showPlaceholderForm ? (
               /* FORMULARIO LARGO / AUDITORÍA COMPLETA PREMIUM */
-              <div className="w-full bg-[#121318] border border-[#00D1B2]/30 rounded-3xl p-8 md:p-12 text-left flex flex-col gap-8 animate-in fade-in duration-500 shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
+              <div id="formulario-premium" className="w-full bg-[#121318] border border-[#00D1B2]/30 rounded-3xl p-8 md:p-12 text-left flex flex-col gap-8 animate-in fade-in duration-500 shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
                 <div className="border-b border-white/5 pb-4">
                   <span className="text-[10px] font-black text-[#00D1B2] uppercase tracking-[0.15em] block mb-1">AUDITORÍA OPERATIVA COMPLETA</span>
                   <h3 className="text-xl md:text-2xl font-black text-white uppercase tracking-tight">
@@ -3155,7 +3155,12 @@ function AuditoriaFormContent() {
                 <div className="flex flex-col items-center gap-3 w-full">
                   <button 
                     type="button"
-                    onClick={() => setShowPlaceholderForm(true)}
+                    onClick={() => {
+                      setShowPlaceholderForm(true);
+                      setTimeout(() => {
+                        document.getElementById('formulario-premium')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                      }, 80);
+                    }}
                     className="w-full max-w-md bg-[#00D1B2] hover:bg-[#00D1B2]/90 text-[#0B0B0C] font-extrabold text-xs md:text-sm uppercase tracking-widest px-8 py-4 rounded-full shadow-lg transition-all duration-300 hover:scale-[1.02] font-sans"
                   >
                     Ver mi desglose exacto
