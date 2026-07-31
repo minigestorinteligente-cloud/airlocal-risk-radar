@@ -275,7 +275,9 @@ let planPriorizadoTexto, planFugasTexto, planProyeccionTexto, planRankingTexto;
 if (scoreFinal < 40) { 
     riskLevel = "CRÍTICO";
     headline = "AUDITORÍA: RIESGO OPERATIVO CRÍTICO";
-    introTexto = "Tu operación actual no está logrando cubrir sus costos de manera consistente.";
+    introTexto = net_income <= 0
+      ? "Tu operación actual no está logrando cubrir sus costos de manera consistente."
+      : "Tu operación es rentable, pero su margen de seguridad es crítico: estás al límite.";
     argument = `Análisis de costos en ${input.city}. Tus gastos se están comiendo el ${expense_ratio}% de todo lo que ingresa. Estás perdiendo dinero o trabajando al límite sin margen de seguridad.`;
     eff_desc = `¡Alerta! Estás gastando $${factorX} USD por cada $1 USD que intentas ganar. Tu rentabilidad está en peligro.`;
     
@@ -900,11 +902,14 @@ else { tension_cabecera = "SALUDABLE"; }
 
 // Narrativa de cabecera (usando tension)
 if (tension_cabecera === "CRITICO") {
+  const enPerdida = net_income <= 0;
   cabeceraRiskLevel = "HIGH";
   cabeceraHeadline = "AUDITORÍA: RIESGO OPERATIVO CRÍTICO";
-  cabeceraIntro = "Tus costos operativos consumen la mayor parte de tus ingresos. Tu operación se encuentra en zona de pérdida.";
-  colchonTitulo = "Tu operación ya está EN PÉRDIDA";
-  colchonLabel = "CADA MES SIN AJUSTAR TE CUESTA DINERO";
+  cabeceraIntro = enPerdida
+    ? "Tus costos operativos consumen la mayor parte de tus ingresos. Tu operación se encuentra en zona de pérdida."
+    : "Tu operación genera utilidad, pero con un margen crítico: una pequeña caída de ingresos o subida de costos te empujaría a pérdida.";
+  colchonTitulo = enPerdida ? "Tu operación ya está EN PÉRDIDA" : "Tu margen operativo está al límite";
+  colchonLabel = enPerdida ? "CADA MES SIN AJUSTAR TE CUESTA DINERO" : "ESTÁS A UN PASO DE ENTRAR EN PÉRDIDA";
   colchonValor = null;
 } else if (tension_cabecera === "VULNERABLE") {
   cabeceraRiskLevel = "MEDIUM";

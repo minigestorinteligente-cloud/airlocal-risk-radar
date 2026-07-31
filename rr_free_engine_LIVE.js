@@ -147,14 +147,19 @@ let headline, introTexto, riskLevel, cabeceraRiskLevel, cabeceraHeadline, cabece
 let colchonTitulo, colchonLabel, colchonValor;
 
 if (tension === "CRITICO") {
+  const enPerdida = net_income <= 0;
   riskLevel = "high";
   cabeceraRiskLevel = "HIGH";
   headline = "AUDITORÍA: RIESGO OPERATIVO CRÍTICO";
   cabeceraHeadline = headline;
-  introTexto = "Tu operación actual no está logrando cubrir sus costos de manera consistente.";
-  cabeceraIntro = "Tus costos operativos consumen la mayor parte de tus ingresos. Tu operación se encuentra en zona de pérdida.";
-  colchonTitulo = "Tu operación ya está EN PÉRDIDA";
-  colchonLabel = "CADA MES SIN AJUSTAR TE CUESTA DINERO";
+  introTexto = enPerdida
+    ? "Tu operación actual no está logrando cubrir sus costos de manera consistente."
+    : "Tu operación es rentable, pero su margen de seguridad es crítico: estás al límite.";
+  cabeceraIntro = enPerdida
+    ? "Tus costos operativos consumen la mayor parte de tus ingresos. Tu operación se encuentra en zona de pérdida."
+    : "Tu operación genera utilidad, pero con un margen crítico: una pequeña caída de ingresos o subida de costos te empujaría a pérdida.";
+  colchonTitulo = enPerdida ? "Tu operación ya está EN PÉRDIDA" : "Tu margen operativo está al límite";
+  colchonLabel = enPerdida ? "CADA MES SIN AJUSTAR TE CUESTA DINERO" : "ESTÁS A UN PASO DE ENTRAR EN PÉRDIDA";
   colchonValor = null;
 } else if (tension === "VULNERABLE") {
   riskLevel = "medium";
