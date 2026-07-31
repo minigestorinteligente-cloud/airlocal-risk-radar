@@ -67,12 +67,21 @@ recuperable(rubro)    = max(0, costo_rubro - gross_income * benchmark_rubro/100)
 - La **dona** usa `pct_de_costos` (composición).
 - Free no tiene el desglose → no puede calcular esto; su Cazafugas queda bloqueado (correcto). Premium lo llena.
 
-### 3.4 Benchmark único
-Un solo set de benchmarks, usado en TODO el reporte (radar, leak_analysis, oportunidades):
-```
-benchmark = { comisiones:15, limpieza:XX, servicios:12, mantenimiento:5, impuestos:18, otros:3 }
-```
-> ⚠️ Elimina el doble benchmark de limpieza (hoy 20% en un cálculo y 10% en otro). Ver **Decisión #1**.
+### 3.4 Benchmark único — POR TIPO DE MERCADO (resuelto)
+Un solo set de benchmarks (% de ingreso), **diferenciado por `market_type`**, usado en TODO el reporte (radar, leak_analysis, oportunidades). Elimina el doble benchmark de limpieza (era market-dependent, no un error).
+
+| Rubro | Urbano/Negocios | Vacacional/Turismo |
+|---|---|---|
+| comisiones | 12 | 12 |
+| limpieza | 9 | 15 |
+| servicios | 8 | 11 |
+| mantenimiento | 5 | 8 |
+| impuestos | 6 | 6 |
+| otros | 4 | 4 |
+| **total ideal** | **~44%** | **~56%** |
+
+> **v1** basado en investigación de industria (Awning, Global Property Guide) + ajuste LATAM. Pendiente: calibrar con la data real (`all_malena_reports.json` / Supabase `reports`).
+> **Coherencia:** como el benchmark total difiere por mercado (~44% vs ~56%), el **objetivo de expense ratio del `score_final` también debe ser market-type-aware** (hoy es fijo 40%). Si no, un vacacional siempre se vería "peor" injustamente.
 
 ### 3.5 Potencial único (con guardas)
 Un solo `potencial_total = suma de oportunidades positivas` (brecha de ocupación + fugas confirmadas), **siempre ≥ 0**. Guardas obligatorias:
@@ -110,8 +119,8 @@ Baked into el Núcleo/narrativa:
 4. Recién entonces, arreglar el render (`page.tsx`): quitar el `productionJson` ficticio, parsear números (no strings), quitar `calculatedData` muerto, y separar el radar en dona + barras.
 5. Todo en la rama; `main` intacto hasta validar.
 
-## 7. Decisiones pendientes (necesito tu criterio)
-- **Decisión #1 — Benchmark de limpieza:** ¿10% (código actual) o 15-25% (doc `03_Logica_Premium`)? Afecta cuánta "fuga" de limpieza se detecta. Es una decisión de mercado, no técnica.
-- **Decisión #2 — Cortes del estado:** ¿confirmamos CRÍTICO <40 / TENSO 40-69 / SALUDABLE ≥70, o ajustamos?
-- **Decisión #3 — Free agregado vs Premium desglosado:** cuando el desglose del Premium no suma igual al gasto agregado que puso en Free, ¿el estado **se refina y se narra** ("tu desglose ajustó el total de $1.400 a $1.350") — recomendado — o lo fijamos al valor Free?
-- **Decisión #4 — Precio oficial:** $45 / $47 / $49-97 aparecen en distintos lugares. ¿Cuál es el real? (No afecta el núcleo, pero sí el copy del funnel.)
+## 7. Decisiones (resueltas 2026-07-31)
+- **Decisión #1 — Benchmarks:** por **tipo de mercado** (ver §3.4). v1 propuesto; se calibrará con data real. *(Pendiente confirmación final de la tabla v1.)*
+- **Decisión #2 — Estado unificado:** se adopta el **modelo de score del Premium** (`score_final`: CRÍTICO <40 / TENSO 40-69 / SALUDABLE ≥70). El Free **abandona** su lógica propia (`net≤0 || margen≤2`) y adopta el score (que puede calcular con agregados). Es la única forma de garantizar que el estado no salte Free→Premium. *(Pendiente confirmación.)* Nota: el target de expense ratio del score debe volverse market-type-aware (ver §3.4).
+- **Decisión #3 — RESUELTO:** el estado y los totales base se **fijan desde el Free**; el Premium **no los recalcula**, solo añade el desglose (Cazafugas/Estratega). Prioriza credibilidad sobre precisión del desglose.
+- **Decisión #4 — RESUELTO:** precio oficial **$47 USD**. Unificar en todo el copy (hoy aparece $45 en `page.tsx` L2341, "$47" en landing, "$49-97" en docs).
