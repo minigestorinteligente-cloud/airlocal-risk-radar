@@ -2064,9 +2064,9 @@ function AuditoriaFormContent() {
                 </p>
               ) : (
                 (hasN8nData ? activeReportObj?.free?.impact_text : productionJson.free?.impact_text) !== "" && (
-                  <p 
+                  <p
                     className="text-zinc-400 text-sm leading-relaxed mb-6 font-medium"
-                    dangerouslySetInnerHTML={{ __html: (hasN8nData ? activeReportObj?.free?.impact_text : productionJson.free?.impact_text) || narrative.desc }}
+                    dangerouslySetInnerHTML={{ __html: ((hasN8nData ? activeReportObj?.free?.impact_text : productionJson.free?.impact_text) || narrative.desc).replace(/text-\[#[0-9A-Fa-f]{3,6}\]/g, narrative.accentText) }}
                   />
                 )
               )}
