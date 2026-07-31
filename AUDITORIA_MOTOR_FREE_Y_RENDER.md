@@ -84,6 +84,65 @@ El camino `?status=critico|vulnerable|saludable` (page.tsx L1797-1813) inyecta *
 
 ---
 
+---
+
+# Auditoría — Motor Premium (`rr_engine_premium_code.js`)
+
+> Cobertura: leídas L1-1028, L1183-1252 + grep del resto. Sin leer en detalle: ensamblado de `cazafugas`/`estratega` (L1028-1183) y `plan_accion`/cierre (L1252-fin).
+> Ejes de evaluación (según contexto de la dueña): (1) consistencia numérica, (2) **continuidad Free↔Premium** (el Guardián no debe cambiar de estado al desplegar), (3) **conversión** (SALUDABLE debe ser trigger, no felicitación; CRÍTICO no debe mostrar ceros crudos que parezcan falla).
+
+## ✅ Fortalezas del Premium
+- **Auditoría de fugas real** por benchmark: `recoverable = max(0, actual_cost − ideal_cost)` con `ideal = gross × benchmark%` (L602-607). Metodología legítima.
+- **Priorización por impacto económico existe**: `oportunidades.sort(b.impacto_mensual − a.impacto_mensual)` (L529) → cumple la promesa #5 conceptualmente.
+- **Hero blindado ≥0**: `hero_mensual = totalPotentialMonthly` = suma de solo impactos positivos (L537-538, 1202). El bug del hero negativo del Free **no existe** en Premium (ya tiene el guard `if(flujo<=0)` en L256).
+- **Buen manejo narrativo del caso sin fugas** (L663-665, 1223-1225): explica que el potencial viene de optimización estratégica (ocupación/pricing), no de sobregasto. Buena base de conversión para SALUDABLE.
+- **`nota_transicion`** (L992) narra explícitamente "estimación inicial → valor confirmado por Cazafugas". Reconciliación inteligente de dos cifras.
+
+## 🔴 CONTINUIDAD — El estado del Guardián puede CAMBIAR al desplegar Free→Premium · **CONFIRMADO** (tu preocupación #1)
+- **Free** `cabecera.risk_level` sale de `tension` = `net≤0 || margin≤2` → HIGH; `ratio≥45 || margin≤7` → MEDIUM; si no LOW.
+- **Premium** `cabecera.risk_level` (L895-918) sale de `expense_ratio≥75 || net≤0` → HIGH; `≥45` → MEDIUM; si no LOW. **Fórmula distinta.**
+- **Escenario:** ratio 40%, net +200, margen 1 noche → **Free: HIGH/CRÍTICO** (margin≤2). **Premium: LOW/OPTIMIZADO** (ratio<45, net>0). Al desbloquear Premium, la cabecera **salta de rojo a verde** para la misma propiedad. Rompe "el Guardián se mantiene idéntico" y parece un bug.
+
+## 🔴 INTERNO — Premium tiene 3 sistemas de estado que pueden contradecirse · **CONFIRMADO**
+- `riskLevel` (de `scoreFinal`: <40 CRÍTICO / <70 TENSO / else OPTIMIZADO, L275) → maneja el **headline** "AUDITORÍA: …".
+- `cabecera.risk_level` (de umbrales de `expense_ratio`, L895) → maneja el **color** de cabecera.
+- `free.risk_level` (L1196) se deriva de `riskLevel` (score), no de `cabecera`.
+- **Escenario:** ratio 50%, buena ocupación/margen → `scoreFinal` puede dar OPTIMIZADO (headline "SALUDABLE") mientras `cabecera` da MEDIUM (color amarillo "TENSO"). Headline y color se contradicen en el mismo reporte.
+
+## 🟠 NÚMEROS — Doble benchmark de limpieza (20% vs 10%) · **CONFIRMADO**
+- `ahorroLimpiezaReal` usa `benchmarkLimpiezaMaxPct = 0.20` (L177-180), pero `leak_analysis` y `benchmarkIdeal.limpieza` usan **10%** (L188, 604). Misma categoría, dos "recuperables" distintos.
+- **Escenario:** gross 3.000, limpieza 400 → `ahorroLimpiezaReal = max(0, 400−600)=0` (oportunidades dice limpieza $0), pero `leak_analysis.limpieza = max(0, 400−300)=100` (el radar dice fuga $100). Contradicción dentro del mismo reporte.
+
+## 🟠 NÚMEROS — Tres "potencial total" distintos en el mismo reporte · **CONFIRMADO**
+1. `flujo_rescatable_mes` (rama fugas, L246-252): limpieza@20% + comis + servicios + mantenim — **excluye impuestos y otros**.
+2. `leak_analysis.total_recoverable_monthly`: los 6 rubros @ su benchmark (limpieza@10%), sin ocupación.
+3. `oportunidadTotalMensual` (= `hero_mensual`): 6 rubros **+ ocupación**.
+- El `guardian_conclusion` muestra a la vez `potencial_economico_identificado` (#3) y una `nota_transicion` que dice que el valor "confirmado" es `leak_analysis.total` (#2). Se narra el puente hero→fugas, pero los tres números siguen coexistiendo en secciones distintas.
+
+## 🟠 NÚMEROS — Radar con denominadores mezclados · **CONFIRMADO** (verificar cuál renderiza `leak-radar.tsx`)
+- `radar_fugas.tus_costos_pct` = costo como **% de total_costs** (L1249). `radar_fugas.benchmark_ideal_pct` = [15,10,12,5,18,3] pensados como **% de ingreso**. Comparar % de costos contra % de ingreso en el mismo gráfico es peras vs manzanas.
+- En cambio `leak_analysis.radar.actual_pct_of_revenue` sí usa **% de ingreso** consistente (L615). Hay **dos radares** con denominadores distintos.
+
+## 🟠 PRIORIZACIÓN — Dos ordenamientos que compiten · **CONFIRMADO**
+- `oportunidades` ordenadas por **impacto económico** (L529) vs `pilaresDebilidadArray` ordenadas por **debilidad de score** (L794), que alimenta `simulador.prioridad_1` (L873). "Qué hacer primero" puede diferir entre la sección de oportunidades y el simulador. La promesa #5 tiene dos respuestas.
+
+## 🟡 CONVERSIÓN — SALUDABLE puede mostrar $0 de potencial (lead perdido) · tu preocupación
+- Propiedad realmente optimizada (ocupación≥target, sin fugas) → `oportunidadTotalMensual = 0` → `potencial_economico_identificado = 0` → hero **$0**. Justo el riesgo que marcaste. El `premiumHeadline` (`gross×0.12×12`, L322) sí es positivo, pero está **desconectado** del potencial calculado (0). Señales mezcladas: el gancho dice "$X", el guardián dice "$0".
+
+## 🟡 CONVERSIÓN — CRÍTICO puede mostrar $0/negativo (percepción "sistema roto") · tu preocupación
+- Crítico con `net<0` + ocupación<target → `impactoOcupacionMensual` negativo (L459-461, sin guard) → sumando solo positivos, `oportunidadTotalMensual` puede quedar en 0 → guardián muestra **$0** para un crítico. Además la oportunidad de ocupación queda con impacto negativo en el array. Los ceros hay que **narrarlos**, no mostrarlos crudos.
+
+## 🟡 NARRATIVA — "EN PÉRDIDA" en cabecera Premium también (L899), pero gatillado por `expense_ratio≥75 || net≤0` (más difícil de tocar una propiedad rentable que el `margin≤2` del Free). Riesgo menor que en Free.
+
+## 🟢 Benchmark vs doc: `limpieza 10%` (código, ambos motores) vs `15-25%` (doc `03_Logica_Premium`). Persiste el desfase código↔doc.
+
+## Síntesis de las dos fases
+- **Continuidad rota** en la cabecera (Free y Premium clasifican el estado con fórmulas distintas) → el estado puede saltar al desplegar. **Es el hallazgo #1 a resolver** para tu principio de "el Guardián se mantiene".
+- **Benchmarks de fuga coinciden Free↔Premium** ([15,10,12,5,18,3]) — bien — **salvo limpieza**, que internamente en Premium se contradice (20% vs 10%).
+- **Conversión:** el Premium tiene buenos ganchos narrativos para SALUDABLE, pero el **número** de potencial puede caer a $0 tanto en SALUDABLE como en CRÍTICO — hay que garantizar un potencial positivo y bien narrado en ambos extremos, o el trigger se cae (lead frío) o parece falla (crítico en $0).
+
+---
+
 ## Próximos pasos sugeridos
 1. Corregir los 2 críticos (negativo + NaN) — clamp del hero a `max(0, …)` y parsear `productionJson` como números, no strings.
 2. Unificar umbrales de estado (una sola fuente de verdad, idealmente el motor; el fallback local debería replicar exactamente o eliminarse).
