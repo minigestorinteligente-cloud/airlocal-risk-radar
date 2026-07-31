@@ -3736,7 +3736,7 @@ function AuditoriaFormContent() {
               {/* Price Tag */}
               <div className="w-full bg-white border border-zinc-200 rounded-2xl p-5 mb-6 text-center shadow-[0_4px_12px_rgba(0,0,0,0.02)]">
                 <span className="text-zinc-500 text-xs font-semibold block mb-0.5 uppercase tracking-wider">TOTAL A PAGAR</span>
-                <span className="text-3xl font-black text-[#003087] tracking-tight block mb-2">$45,00 USD</span>
+                <span className="text-3xl font-black text-[#003087] tracking-tight block mb-2">$47,00 USD</span>
                 <span 
                   onClick={() => {
                     setAccessCode('BETA2026');

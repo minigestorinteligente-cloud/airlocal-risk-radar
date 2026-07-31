@@ -83,7 +83,7 @@ Math.max(
   0,
   Math.min(
     40,
-    40 - ((expense_ratio - 40) * 1.5)
+    40 - ((expense_ratio - 35) * 2)
   )
 );
 
@@ -92,7 +92,7 @@ Math.max(
   0,
   Math.min(
     25,
-    (ocupacion_pct / occupancyTarget) * 25
+    Math.pow(ocupacion_pct / occupancyTarget, 1.5) * 25
   )
 );
 
@@ -101,7 +101,7 @@ Math.max(
   0,
   Math.min(
     20,
-    (nochesParaPerdida / 10) * 20
+    (nochesParaPerdida / 12) * 20
   )
 );
 
@@ -110,7 +110,7 @@ Math.max(
   0,
   Math.min(
     15,
-    (netMarginPct / 15) * 15
+    (netMarginPct / 20) * 15
   )
 );
 
@@ -294,7 +294,7 @@ if (scoreFinal < 40) {
     planProyeccionTexto = `Instala controles inteligentes básicos para cortar la luz de forma remota cuando la propiedad quede vacía.`;
     planRankingTexto = `Tu propiedad tiene números de alerta para el mercado de ${input.bedrooms} habitaciones. Necesitas aplicar estos 3 pasos de inmediato.`;
 } 
-else if (scoreFinal < 70) { 
+else if (scoreFinal < 75) {
     riskLevel = "TENSO";
     headline = "AUDITORÍA: MARGEN OPERATIVO TENSO";
     introTexto = "Tu estructura de ingresos y gastos indica una operación vulnerable.";
@@ -897,7 +897,7 @@ const simulador = {
 // Ahora la cabecera coincide con el headline (que ya usa scoreFinal) y con el Free.
 let tension_cabecera;
 if (scoreFinal < 40) { tension_cabecera = "CRITICO"; }
-else if (scoreFinal < 70) { tension_cabecera = "VULNERABLE"; }
+else if (scoreFinal < 75) { tension_cabecera = "VULNERABLE"; }
 else { tension_cabecera = "SALUDABLE"; }
 
 // Narrativa de cabecera (usando tension)

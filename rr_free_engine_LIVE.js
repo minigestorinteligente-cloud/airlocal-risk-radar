@@ -56,10 +56,10 @@ const netMarginPct = input.gross_income > 0 ? (net_income / input.gross_income) 
 // ── NUCLEO COMPARTIDO: Score de Salud (IDENTICO a RR_ENGINE_PREMIUM_25JUN) ──
 // Se calcula con agregados (los mismos que tiene el Free) para que Free y Premium
 // clasifiquen el estado con la MISMA formula y el estado no salte Free->Premium.
-const expenseScore = Math.max(0, Math.min(40, 40 - ((expense_ratio - 40) * 1.5)));
-const occupancyScore = Math.max(0, Math.min(25, (ocupacion_pct / occupancyTarget) * 25));
-const marginScore = Math.max(0, Math.min(20, (nochesParaPerdida / 10) * 20));
-const netMarginScore = Math.max(0, Math.min(15, (netMarginPct / 15) * 15));
+const expenseScore = Math.max(0, Math.min(40, 40 - ((expense_ratio - 35) * 2)));
+const occupancyScore = Math.max(0, Math.min(25, Math.pow(ocupacion_pct / occupancyTarget, 1.5) * 25));
+const marginScore = Math.max(0, Math.min(20, (nochesParaPerdida / 12) * 20));
+const netMarginScore = Math.max(0, Math.min(15, (netMarginPct / 20) * 15));
 const scoreSalud = Math.round(expenseScore + occupancyScore + marginScore + netMarginScore);
 
 let riesgoFinanciero = 0;
@@ -77,7 +77,7 @@ const scoreFinal = Math.max(0, Math.min(100, scoreSalud - riesgoFinanciero));
 // 3. Estado de Salud — clasificacion UNIFICADA por scoreFinal (antes: umbrales propios)
 let tension;
 if (scoreFinal < 40) { tension = "CRITICO"; }
-else if (scoreFinal < 70) { tension = "VULNERABLE"; }
+else if (scoreFinal < 75) { tension = "VULNERABLE"; }
 else { tension = "SALUDABLE"; }
 
 // 4. VERSIÓN B FINAL - DETECCIÓN HÍBRIDA CON COMPETITIVE ADR
