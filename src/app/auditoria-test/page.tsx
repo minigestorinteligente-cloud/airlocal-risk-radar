@@ -1186,6 +1186,7 @@ function AuditoriaFormContent() {
   const whatIf = activeReport.what_if || activeReport.tacometro?.simulador_what_if || productionJson.what_if || productionJson.tacometro.simulador_what_if;
   const percepcion = activeReport.seccion_percepcion || productionJson.seccion_percepcion;
   const radar = activeReport.radar_fugas || productionJson.radar_fugas;
+  const leakRadar = (activeReport.leak_analysis || {})?.radar || {};
   const planAccion = activeReport.plan_accion_inteligente || productionJson.plan_accion_inteligente;
   const cazafugas = activeReport.cazafugas || productionJson.cazafugas;
   const estratega = activeReport.estratega || productionJson.estratega || {};
@@ -2739,10 +2740,12 @@ function AuditoriaFormContent() {
                       <div className="w-full flex flex-col lg:flex-row gap-8 p-6 md:p-8 rounded-2xl bg-[#0E1218]/60 border border-[#161B26] items-center lg:items-stretch">
                         {/* Columna Izquierda: Radar (45% width) */}
                         <div className="w-full lg:w-[45%] flex items-center justify-center min-w-0 shrink-0">
-                          <LeakRadar 
+                          <LeakRadar
                             tusCostosPct={radar?.tus_costos_pct}
                             benchmarkIdealPct={radar?.benchmark_ideal_pct}
                             labels={radar?.labels}
+                            actualPctRevenue={leakRadar?.actual_pct_of_revenue}
+                            benchmarkPctRevenue={leakRadar?.benchmark_pct}
                             showEfficientBox={false}
                           />
                         </div>
