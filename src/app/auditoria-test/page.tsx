@@ -925,8 +925,8 @@ function AuditoriaFormContent() {
       noches_restantes: 11,
       impact_text: `Podrías estar rescatando hasta <span class="text-[#00D1B2] font-extrabold">$808 USD</span> al mes (o <span class="text-[#00D1B2] font-extrabold">$9,696 USD</span> al año) con el plan de acción si nivelas tu ocupación a la Zona Óptima de Rentabilidad (60% del mercado).`,
       hero_titulo: "Potencial Económico Identificado",
-      hero_anual: "+$9,696 USD / año",
-      hero_mensual: "+$808 USD / mes",
+      hero_anual: 9696,
+      hero_mensual: 808,
       hero_descripcion: "AIRLOCAL detectó fugas y brechas que limitan tu potencial.",
       user_summary: {
         property_name: formData.property_name || "Domingo",
@@ -1969,6 +1969,30 @@ function AuditoriaFormContent() {
 
       {currentStep === 4 && !isFetchingReport ? (
         /* PANTALLA 4: RESULTADOS CON REPORTE PREMIUM COMPLETO (NÍTIDO Y ACCIONABLE) - SIN TARJETA CONTENEDORA EXTERNA */
+        !hasN8nData && !statusFromUrl ? (
+          /* SIN DATOS: n8n no respondió y no hay URL params — estado de espera limpio */
+          <div className="flex flex-col items-center justify-center py-24 gap-6 text-center animate-in fade-in duration-500">
+            <div className="relative w-16 h-16 flex items-center justify-center">
+              <div className="w-10 h-10 border-2 border-[#00D1B2]/20 border-t-[#00D1B2] rounded-full animate-spin" />
+              <div className="absolute inset-0 rounded-full bg-[#00D1B2]/5 blur-lg animate-pulse" />
+            </div>
+            <div>
+              <p className="text-sm font-extrabold text-[#00D1B2] uppercase tracking-[0.15em] mb-2">
+                Tu diagnóstico está siendo procesado
+              </p>
+              <p className="text-xs text-zinc-500 max-w-xs mx-auto leading-relaxed">
+                Esto puede tomar unos segundos. Si la página no actualiza en 30 segundos, recárgala para ver tu reporte.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => window.location.reload()}
+              className="px-6 py-2.5 border border-[#00D1B2]/30 hover:border-[#00D1B2]/60 text-[#00D1B2] text-xs font-bold uppercase tracking-widest rounded-full transition-all"
+            >
+              Recargar página
+            </button>
+          </div>
+        ) : (
         <div className="space-y-8 animate-in fade-in zoom-in-95 duration-500 text-left w-full">
             
             {/* CABECERA DE RESUMEN INICIAL */}
@@ -2339,7 +2363,7 @@ function AuditoriaFormContent() {
                     onClick={handleOpenCheckout}
                     className="flex-1 bg-gradient-to-r from-[#00D1B2] to-[#00FFD1] text-[#0B0B0C] font-black text-xs md:text-sm uppercase tracking-widest px-8 py-4 rounded-full shadow-lg transition-all duration-300 hover:scale-[1.02] flex items-center justify-center gap-2"
                   >
-                    <span>Desbloquear análisis completo ($45 USD)</span>
+                    <span>Desbloquear análisis completo ($47 USD)</span>
                   </button>
                   <button 
                     type="button"
@@ -3176,6 +3200,7 @@ function AuditoriaFormContent() {
         </div>
       )}
     </div>
+        )
       ) : (
         /* FORM CONTAINER PARA PASOS 1-4 Y CARGA */
         <div className="bg-[#121214] border border-white/5 rounded-2xl p-6 md:p-10 shadow-2xl relative overflow-hidden">
