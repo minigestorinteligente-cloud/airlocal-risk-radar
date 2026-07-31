@@ -102,12 +102,10 @@ export default async function ReportData({ email }: { email?: string }) {
   const occMatch = String(occupancyStr).match(/\d+/);
   const occNum = occMatch ? parseInt(occMatch[0], 10) : 0; 
   
-  const rawOpCost = metrics.operating_costs !== undefined 
-    ? parseFloat(String(metrics.operating_costs).replace(/[^\d.-]/g, '')) 
-    : revNum * (expensePctRaw / 100);
-
-  const opCostNum = Math.round(rawOpCost);
-  const finalNetIncomeNum = revNum - opCostNum;
+  const opCostNum = metrics.operating_costs !== undefined 
+    ? Math.round(parseFloat(String(metrics.operating_costs).replace(/[^\d.-]/g, ''))) 
+    : Math.round(revNum - netIncomeNum);
+  const finalNetIncomeNum = netIncomeNum;
 
   const getNetIncomeColorClass = () => {
     if (finalNetIncomeNum < 0 || riskLevelRaw === 'HIGH') return 'text-[#FF2D2D]';
@@ -119,7 +117,9 @@ export default async function ReportData({ email }: { email?: string }) {
   
   const netUtilityRaw = metrics.net_utility_nights !== undefined 
     ? parseInt(String(metrics.net_utility_nights).replace(/[^\d.-]/g, '')) 
-    : Math.max(0, occNum - breakEvenNum);
+    : (metrics.margin_of_safety !== undefined 
+       ? parseInt(String(metrics.margin_of_safety).replace(/[^\d.-]/g, '')) 
+       : Math.max(0, occNum - breakEvenNum));
   const utilityPercent = (netUtilityRaw / totalNights) * 100;
 
   const marginOfSafetyStr = metrics.margin_of_safety !== undefined 
@@ -129,7 +129,7 @@ export default async function ReportData({ email }: { email?: string }) {
   
   // --- Validation Layer Logic ---
   const isInconsistentOccupancy = occNum > totalNights;
-  const adr = occNum > 0 ? revNum / occNum : 0;
+  const adr = adrNum;
   const isAtypicalADR = occNum > 0 && (adr < 15 || adr > 2000);
   const isHighExpenses = revNum > 0 && opCostNum > revNum * 2;
 
@@ -137,7 +137,11 @@ export default async function ReportData({ email }: { email?: string }) {
   const operativGasColorHex = getRiskBgColorHex(riskLevelRaw);
 
   let rendimientoColorHex = '#10b981'; // Green per user request: "barra verde"
-  let rendimientoPercent = (occNum / 30) * 100; // Cálculo dinámico exacto: (noches_ocupadas / 30) * 100
+  let rendimientoPercent = metrics.ocupacion_pct !== undefined 
+    ? Number(metrics.ocupacion_pct) 
+    : (metrics.occupancy_pct !== undefined 
+       ? Number(metrics.occupancy_pct) 
+       : ((occNum / 30) * 100));
 
   return (
     <div className="w-full flex flex-col gap-4 font-sans max-w-5xl mx-auto relative mt-2">

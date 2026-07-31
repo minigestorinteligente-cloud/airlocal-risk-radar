@@ -13,6 +13,12 @@ export function LeakRadar({
   labels?: string[];
   showEfficientBox?: boolean;
 }) {
+  console.log("LeakRadar Dataset recibido:", {
+    tusCostosPct,
+    benchmarkIdealPct,
+    labels
+  });
+
   const radarCenter = 150;
   const maxRadius = 100;
   const concentricLevels = [0.2, 0.4, 0.6, 0.8, 1.0];

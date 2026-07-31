@@ -279,6 +279,9 @@ function AuditoriaFormContent() {
   const [isBetaModalOpen, setIsBetaModalOpen] = useState(false);
   const [isUnlocked, setIsUnlocked] = useState(false);
   const [showPlaceholderForm, setShowPlaceholderForm] = useState(false);
+  const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false);
+  const [accessCode, setAccessCode] = useState('');
+  const [checkoutError, setCheckoutError] = useState('');
 
   interface FormDataState {
     property_name: string;
@@ -287,6 +290,7 @@ function AuditoriaFormContent() {
     property_type: string;
     market_type: string;
     Max_guest: number | string;
+    max_guests: number | string;
     bedrooms: number | string;
     bathrooms: number | string;
     occupied_nights: number;
@@ -299,6 +303,7 @@ function AuditoriaFormContent() {
     tax_cost: number | string;
     Hidden_cost: number | string;
     approximate_expenses: number | string;
+    competitive_adr: number | string;
     stability_perception: string;
     risk_perception: string;
     no_major_risk: string;
@@ -312,6 +317,7 @@ function AuditoriaFormContent() {
     property_type: 'Apartamento',
     market_type: '',
     Max_guest: 2,
+    max_guests: 2,
     bedrooms: 1,
     bathrooms: 1,
     occupied_nights: 17,
@@ -324,6 +330,7 @@ function AuditoriaFormContent() {
     tax_cost: 250,
     Hidden_cost: 50,
     approximate_expenses: 1400,
+    competitive_adr: '',
     stability_perception: 'Se mantuvieron',
     risk_perception: 'Totalmente bajo control',
     no_major_risk: 'Nada en particular (por ahora)',
@@ -416,14 +423,124 @@ function AuditoriaFormContent() {
     setCurrentStep(prev => Math.max(prev - 1, 1));
   };
 
-  const handlePremiumSubmit = async () => {
-    setIsFetchingReport(true);
-    // Simular tiempo de procesamiento
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    setIsFetchingReport(false);
-    setShowPlaceholderForm(false);
-    setIsUnlocked(true);
+  const handleOpenCheckout = () => {
+    setIsCheckoutModalOpen(true);
+    setAccessCode('');
+    setCheckoutError('');
   };
+
+  const handleConfirmCheckout = () => {
+    if (accessCode.toUpperCase() === 'BETA2026') {
+      setIsCheckoutModalOpen(false);
+      handlePremiumSubmit();
+    } else {
+      setCheckoutError('Código inválido. Intenta de nuevo.');
+    }
+  };
+
+  const handlePremiumSubmit = async () => {
+    setIsSubmitting(true);
+    setIsFetchingReport(true);
+    setErrorMessage('');
+
+    const finalEmail = formData.email.trim() || 'malenasoloads@gmail.com';
+    const assessmentCode = n8nReport?.assessment_code || '';
+    const reportUuid = n8nReport?.id || '';
+
+    const payload: Record<string, any> = {
+      property_name: String(formData.property_name),
+      country: String(formData.country || 'España'),
+      city: String(formData.city || 'Madrid'),
+      property_type: String(formData.property_type),
+      market_type: String(formData.market_type || ''),
+      Max_guest: Math.round(Number(formData.Max_guest)),
+      bedrooms: Math.round(Number(formData.bedrooms)),
+      bathrooms: Math.round(Number(formData.bathrooms)),
+      occupied_nights: Math.round(Number(formData.occupied_nights)),
+      available_nights: Math.round(Number(formData.available_nights)),
+      gross_income: Math.round(Number(formData.gross_income)),
+      platfom_commission: Math.round(Number(formData.platfom_commission || 0)),
+      cleaning_cost: Math.round(Number(formData.cleaning_cost || 0)),
+      services_cost: Math.round(Number(formData.services_cost || 0)),
+      maintenence_cost: Math.round(Number(formData.maintenence_cost || 0)),
+      tax_cost: Math.round(Number(formData.tax_cost || 0)),
+      Hidden_cost: Math.round(Number(formData.Hidden_cost || 0)),
+      stability_perception: String(formData.stability_perception),
+      risk_perception: String(formData.risk_perception),
+      no_major_risk: String(formData.no_major_risk),
+      email: String(finalEmail),
+      assessment_code: String(assessmentCode),
+      uuid: String(reportUuid)
+    };
+
+    console.log("PAYLOAD WEBHOOK ENVIADO A N8N PARA ETAPA 2 (PREMIUM):", payload);
+
+    try {
+      const searchParamsPayload = new URLSearchParams();
+      Object.keys(payload).forEach(key => {
+        searchParamsPayload.append(key, String(payload[key]));
+      });
+
+      await fetch("https://n8n.propiqdata.com/webhook/risk-radar-v3", {
+        method: "POST",
+        mode: 'no-cors',
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded"
+        },
+        body: searchParamsPayload.toString()
+      });
+
+      console.log("Datos Premium enviados con éxito. Consultando Supabase para reporte Premium...");
+
+      let fetchedData = null;
+      if (supabaseClient) {
+        // Polling loop
+        for (let attempt = 0; attempt < 8; attempt++) {
+          console.log(`Intentando consultar Supabase Premium (intento ${attempt + 1})...`);
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          
+          const { data, error: sbError } = await supabaseClient
+            .from('reports')
+            .select('*')
+            .eq('assessment_code', n8nReport.assessment_code)
+            .single() as any;
+
+          if (data && data.report_level === 'premium' && data.status === 'COMPLETED' && data.report_data !== null) {
+            let parsedObj = { ...data };
+            try {
+              if (parsedObj.report_data) {
+                let raw = parsedObj.report_data;
+                if (typeof raw === 'string') raw = JSON.parse(raw);
+                if (typeof raw === 'string') raw = JSON.parse(raw);
+                if (raw && raw.report_data && !raw.free) {
+                  raw = raw.report_data;
+                }
+                parsedObj.report_data = raw;
+              }
+            } catch (e) {
+              console.error('Error parsing report_data:', e);
+            }
+            fetchedData = parsedObj;
+            console.log("Reporte Premium obtenido exitosamente:", fetchedData);
+            break;
+          }
+        }
+      }
+
+      if (fetchedData) {
+        setN8nReport(fetchedData);
+        setIsUnlocked(true);
+      }
+      
+    } catch (error: any) {
+      console.error("ERROR EN EL ENVÍO A N8N PREMIUM:", error);
+    } finally {
+      setIsFetchingReport(false);
+      setShowPlaceholderForm(false);
+      setIsSubmitting(false);
+    }
+  };
+
 
   // CÁLCULOS MATEMÁTICOS DEL CEREBRO N8N (LOCAL FALLBACK DE ALTO RENDIMIENTO)
   const calculateResults = () => {
@@ -548,7 +665,8 @@ function AuditoriaFormContent() {
       city: String(formData.city || 'Madrid'),
       property_type: String(formData.property_type),
       market_type: String(formData.market_type || ''),
-      Max_guest: Math.round(Number(formData.Max_guest)),
+      Max_guest: Math.round(Number(formData.max_guests)),
+      max_guests: Math.round(Number(formData.max_guests)),
       bedrooms: Math.round(Number(formData.bedrooms)),
       bathrooms: Math.round(Number(formData.bathrooms)),
       occupied_nights: Math.round(Number(formData.occupied_nights)),
@@ -560,6 +678,7 @@ function AuditoriaFormContent() {
       maintenence_cost: 0,
       tax_cost: 0,
       Hidden_cost: Math.round(Number(formData.approximate_expenses || 1400)),
+      competitive_adr: formData.competitive_adr !== '' ? Number(formData.competitive_adr) : '',
       stability_perception: String(formData.stability_perception),
       risk_perception: String(formData.risk_perception),
       no_major_risk: String(formData.no_major_risk),
@@ -581,7 +700,7 @@ function AuditoriaFormContent() {
       const submitTime = new Date(Date.now() - 30000).toISOString(); // 30s buffer for safety
 
       // Petición robusta con mode: 'no-cors' y content-type urlencoded
-      await fetch("https://n8n.propiqdata.com/webhook/risk-radar-v2", {
+      await fetch("https://n8n.propiqdata.com/webhook/risk-radar-v3", {
         method: "POST",
         mode: 'no-cors',
         headers: {
@@ -736,7 +855,7 @@ function AuditoriaFormContent() {
   let activeBreakEven = breakEvenNoches;
   let activeNetIncome = Number(n8nMetrics?.net_income ?? (Number(formData.gross_income || 3000) - totalCostsVal));
 
-  if (statusFromUrl) {
+  if (statusFromUrl && !hasN8nData) {
     if (statusFromUrl === 'saludable') {
       activeBreakEven = 14;
       activeNetIncome = 1600;
@@ -750,14 +869,30 @@ function AuditoriaFormContent() {
   }
 
   const calculatedData = {
-    ahorroLimpieza: Math.round(cleaningVal * 0.25) || 75,
-    porcentajeOta: Math.round((commissionVal / (rawRev || 1)) * 100) || 15,
-    fugaComisiones: Math.round(commissionVal * 0.35) || 150,
-    excesoServicios: Math.round((servicesVal / (totalCostsVal || 1)) * 100) || 12,
-    recuperacionAnual: Math.round((cleaningVal * 0.25 + commissionVal * 0.35 + servicesVal * 0.15) * 12) || 3096,
-    percentilActual: isLow ? 72 : isMedium ? 40 : 15,
-    percentilObjetivo: isLow ? 90 : isMedium ? 78 : 65,
-    userOccupancy: Math.round(occupationPct)
+    ahorroLimpieza: hasN8nData
+      ? (Number(reportDataObj.oportunidades_rentabilidad?.ranking?.find((r: any) => String(r.tipo || r.pilar || '').toLowerCase().includes('limpieza'))?.impacto_mensual) || 0)
+      : Math.round(cleaningVal * 0.25) || 75,
+    porcentajeOta: hasN8nData
+      ? (reportDataObj.radar_fugas?.tus_costos_pct?.[0] || 0)
+      : Math.round((commissionVal / (rawRev || 1)) * 100) || 15,
+    fugaComisiones: hasN8nData
+      ? (Number(reportDataObj.oportunidades_rentabilidad?.ranking?.find((r: any) => String(r.tipo || r.pilar || '').toLowerCase().includes('comisiones'))?.impacto_mensual) || 0)
+      : Math.round(commissionVal * 0.35) || 150,
+    excesoServicios: hasN8nData
+      ? (reportDataObj.radar_fugas?.tus_costos_pct?.[2] || 0)
+      : Math.round((servicesVal / (totalCostsVal || 1)) * 100) || 12,
+    recuperacionAnual: hasN8nData
+      ? (reportDataObj.oportunidades_rentabilidad?.oportunidad_total_anual || n8nFree?.hero_anual || 0)
+      : Math.round((cleaningVal * 0.25 + commissionVal * 0.35 + servicesVal * 0.15) * 12) || 3096,
+    percentilActual: hasN8nData
+      ? (reportDataObj.oportunidades_rentabilidad?.principal?.score_actual || (isLow ? 72 : isMedium ? 40 : 15))
+      : (isLow ? 72 : isMedium ? 40 : 15),
+    percentilObjetivo: hasN8nData
+      ? (reportDataObj.oportunidades_rentabilidad?.principal?.score_maximo || (isLow ? 90 : isMedium ? 78 : 65))
+      : (isLow ? 90 : isMedium ? 78 : 65),
+    userOccupancy: hasN8nData
+      ? (reportDataObj.oportunidades_rentabilidad?.ocupacion_actual || n8nMetrics?.ocupacion_pct || n8nMetrics?.occupancy_pct || 0)
+      : Math.round(occupationPct)
   };
 
   const productionJson = {
@@ -1221,17 +1356,7 @@ function AuditoriaFormContent() {
 
   const scoreFinal = Number(activeReport.tacometro?.score_final ?? 53);
   const cabeceraRiskLevel = riskLevel;
-  let scoreFinalCalibrado = scoreFinal;
-  if (cabeceraRiskLevel === "HIGH") {
-    scoreFinalCalibrado = Math.min(scoreFinal, 39);
-  }
-  if (cabeceraRiskLevel === "MEDIUM") {
-    scoreFinalCalibrado = Math.min(scoreFinal, 69);
-  }
-  if (cabeceraRiskLevel === "LOW") {
-    scoreFinalCalibrado = Math.max(scoreFinal, 70);
-  }
-  const activeScore = scoreFinalCalibrado;
+  const activeScore = scoreFinal;
   const activeExpenseRatio = Number(activeReport.free?.metrics?.expense_ratio ?? 47);
   // activeNetIncome is already declared and initialized above with overrides
   
@@ -1653,41 +1778,37 @@ function AuditoriaFormContent() {
   const activeReportObj = n8nReport?.report_data || n8nReport;
 
   let activeMarginOfSafetyVal = hasN8nData
-    ? Number(activeReportObj?.cabecera?.margin_of_safety ?? activeReportObj?.free?.metrics?.margin_of_safety ?? 9)
+    ? Number(activeReportObj?.free?.metrics?.margin_of_safety ?? 9)
     : activeMarginOfSafety;
 
+  const isPremium = n8nReport?.report_level === 'premium' || isUnlocked;
+
   let heroMensualVal = hasN8nData
-    ? (activeReportObj?.opportunity_engine?.total_potential_monthly ?? activeReportObj?.free?.hero_mensual ?? 808)
-    : (productionJson.opportunity_engine?.total_potential_monthly ?? 808);
+    ? Number(activeReportObj?.free?.hero_mensual ?? 808)
+    : Number(productionJson.free?.hero_mensual ?? 808);
 
   let heroAnualVal = hasN8nData
-    ? (activeReportObj?.opportunity_engine?.total_potential_annual ?? activeReportObj?.free?.hero_anual ?? 9696)
-    : (productionJson.opportunity_engine?.total_potential_annual ?? 9696);
+    ? Number(activeReportObj?.free?.hero_anual ?? 9696)
+    : Number(productionJson.free?.hero_anual ?? 9696);
 
   let colchonTitulo = activeReportObj?.cabecera?.colchon?.titulo;
   let colchonLabel = activeReportObj?.cabecera?.colchon?.label;
 
-  if (statusFromUrl) {
+  if (statusFromUrl && !hasN8nData) {
     if (statusFromUrl === 'saludable') {
       activeMarginOfSafetyVal = 14;
-      if (!hasN8nData) {
-        heroMensualVal = 1600;
-        heroAnualVal = 19200;
-      }
+      heroMensualVal = 1600;
+      heroAnualVal = 19200;
       colchonTitulo = "Tienes 14 noches de colchón";
       colchonLabel = "PERO CADA DECISIÓN DE PRECIO O OCUPACIÓN DEFINE TU PRÓXIMA UNIDAD";
     } else if (statusFromUrl === 'vulnerable' || statusFromUrl === 'medium' || statusFromUrl === 'tenso') {
       activeMarginOfSafetyVal = 9;
-      if (!hasN8nData) {
-        heroMensualVal = 327;
-        heroAnualVal = 3924;
-      }
+      heroMensualVal = 327;
+      heroAnualVal = 3924;
     } else if (statusFromUrl === 'critico' || statusFromUrl === 'critica' || statusFromUrl === 'critical' || statusFromUrl === 'high') {
       activeMarginOfSafetyVal = 0;
-      if (!hasN8nData) {
-        heroMensualVal = 4500;
-        heroAnualVal = 54000;
-      }
+      heroMensualVal = 4500;
+      heroAnualVal = 54000;
     }
   }
 
@@ -1765,6 +1886,25 @@ function AuditoriaFormContent() {
 
   return (
     <div className={`w-full mx-auto mb-12 ${currentStep === 4 ? 'max-w-none' : 'max-w-[800px]'}`}>
+      
+      {/* 2. HERO SUPERIOR (Dinámico para pasos 1-3) */}
+      {currentStep <= 3 && (
+        <div className="text-center mb-10 w-full animate-in fade-in slide-in-from-bottom-4 duration-700">
+          <div className="inline-block px-3 py-1.5 rounded-full border border-[#00D1B2]/20 bg-[#00D1B2]/10 text-[#00D1B2] text-[10px] md:text-xs font-bold tracking-widest uppercase mb-6 shadow-[0_0_15px_rgba(0,209,178,0.1)] animate-pulse">
+            AUDITORÍA OPERATIVA COMPLETA
+          </div>
+          <h1 className="text-3xl md:text-5xl font-bold tracking-tight text-white mb-6 leading-tight max-w-2xl mx-auto">
+            {currentStep === 1 && "Mientras no tengas claridad, tu operación es una apuesta."}
+            {currentStep === 2 && "Aquí está exactamente dónde se escapa."}
+            {currentStep === 3 && "Tu plan está listo."}
+          </h1>
+          <p className="text-base md:text-lg text-zinc-400 max-w-xl mx-auto leading-relaxed mb-6">
+            {currentStep === 1 && "Responde 4 preguntas sobre tu operación. Te mostraré exactamente dónde está el agujero y cuánto puedes recuperar."}
+            {currentStep === 2 && "Tus números revelan 3 oportunidades. El sistema prioriza por impacto económico. Mira cuál es tu mayor palanca."}
+            {currentStep === 3 && "Tu diagnóstico inicial llegará en 1 minuto. Ahí verás exactamente dónde está tu dinero atrapado. Luego, desglosa tus gastos reales para ver el plan completo."}
+          </p>
+        </div>
+      )}
       
       {/* BARRA DE PROGRESO PREMIUM (Solo visible en pasos de llenado 1-3) */}
       {currentStep <= 3 && (
@@ -1893,9 +2033,18 @@ function AuditoriaFormContent() {
                 {renderTitle(narrative.title, narrative.accentText)}
               </h2>
 
-              <p className="text-zinc-400 text-sm leading-relaxed mb-6 font-medium">
-                {narrative.desc}
-              </p>
+              {isPremium ? (
+                <p className="text-zinc-400 text-sm leading-relaxed mb-6 font-medium">
+                  {narrative.desc}
+                </p>
+              ) : (
+                (hasN8nData ? activeReportObj?.free?.impact_text : productionJson.free?.impact_text) !== "" && (
+                  <p 
+                    className="text-zinc-400 text-sm leading-relaxed mb-6 font-medium"
+                    dangerouslySetInnerHTML={{ __html: (hasN8nData ? activeReportObj?.free?.impact_text : productionJson.free?.impact_text) || narrative.desc }}
+                  />
+                )
+              )}
 
               <div className="pt-6 border-t border-zinc-800/50 flex flex-col gap-4">
                 {/* Bloque de noches: Visible en MEDIUM y LOW */}
@@ -1922,7 +2071,19 @@ function AuditoriaFormContent() {
                     IMPACTO ECONÓMICO
                   </div>
                   <div className="text-xl md:text-2xl font-black text-white">
-                    Potencial Económico Identificado: <span className={`font-black ${narrative.accentText}`}>+${formattedHeroMensual} USD/mes</span> (+${formattedHeroAnual} USD/año)
+                    Potencial Económico Identificado:{" "}
+                    {activeReportObj?.free?.hero_display ? (
+                      <span className={`font-black ${narrative.accentText}`}>
+                        {activeReportObj.free.hero_display}
+                      </span>
+                    ) : (
+                      <>
+                        <span className={`font-black ${narrative.accentText}`}>
+                          +${formattedHeroMensual} USD/mes
+                        </span>{" "}
+                        (+${formattedHeroAnual} USD/año)
+                      </>
+                    )}
                   </div>
                 </div>
               </div>
@@ -2063,6 +2224,15 @@ function AuditoriaFormContent() {
                   </div>
                 </div>
 
+                <div className="border-t border-white/5 pt-6">
+                  <h3 className="text-lg md:text-xl font-black text-white uppercase tracking-tight">
+                    El dinero atrapado tiene una dirección.
+                  </h3>
+                  <p className="text-xs text-[#8e8e93] font-semibold mt-1">
+                    Completa estos números. Vamos a mostrar exactamente dónde está tu mayor oportunidad — y en qué orden actuar para recuperarla.
+                  </p>
+                </div>
+
                 {/* 2. SECCIÓN: DATOS DE COSTOS DESGLOSADOS (NUEVOS E IMPORTANTES) */}
                 <div className="space-y-6">
                   <h4 className="text-xs font-black text-[#00D1B2] uppercase tracking-widest flex items-center gap-2">
@@ -2165,10 +2335,10 @@ function AuditoriaFormContent() {
                 <div className="flex flex-col sm:flex-row gap-4 border-t border-white/5 pt-6 mt-4 w-full">
                   <button 
                     type="button"
-                    onClick={handlePremiumSubmit}
+                    onClick={handleOpenCheckout}
                     className="flex-1 bg-gradient-to-r from-[#00D1B2] to-[#00FFD1] text-[#0B0B0C] font-black text-xs md:text-sm uppercase tracking-widest px-8 py-4 rounded-full shadow-lg transition-all duration-300 hover:scale-[1.02] flex items-center justify-center gap-2"
                   >
-                    <span>Completar Auditoría Completa 🚀</span>
+                    <span>Desbloquear análisis completo ($45 USD)</span>
                   </button>
                   <button 
                     type="button"
@@ -2333,7 +2503,7 @@ function AuditoriaFormContent() {
                               <div className="w-full flex items-center gap-2 self-start mb-2">
                                 <span className="h-[1px] w-5 bg-[#00D1B2]" />
                                 <span className="text-xs font-bold uppercase tracking-[0.2em] text-neutral-300">
-                                  Potencial Económico Identificado
+                                  Potencial Económico Confirmado
                                 </span>
                               </div>
 
@@ -2967,12 +3137,15 @@ function AuditoriaFormContent() {
                 </div>
                 
                 <h3 className="text-xl md:text-2xl font-black text-white uppercase tracking-tight max-w-md leading-tight">
-                  Desbloquea la Secuencia de Auditoría Completa
+                  Tienes +${formattedHeroMensual} USD/mes atrapados.
                 </h3>
                 
-                <p className="text-zinc-400 text-xs md:text-sm font-semibold max-w-lg leading-relaxed">
-                  Ya identificamos que tu propiedad tiene un potencial de <span className="text-[#00D1B2] font-black">+{formattedHeroMensual} USD/mes</span> en riesgo. 
-                  Desbloquea el análisis completo de El Guardián, El Cazafugas y El Estratega para ver el desglose exacto de tus fugas y el plan de priorización.
+                <p className="text-zinc-400 text-xs md:text-sm font-semibold max-w-lg leading-relaxed text-left">
+                  El plan de rescate está aquí:<br /><br />
+                  👉 El Guardián te dice si es seguro seguir así.<br />
+                  👉 El Cazafugas te muestra dónde se escapa el dinero.<br />
+                  👉 El Estratega te da los pasos exactos — en orden.<br /><br />
+                  Completa los números de tus gastos para verlo todo desglosado.
                 </p>
 
                 {/* Buttons / Placeholder steps */}
@@ -2982,7 +3155,7 @@ function AuditoriaFormContent() {
                     onClick={() => setShowPlaceholderForm(true)}
                     className="w-full max-w-md bg-[#00D1B2] hover:bg-[#00D1B2]/90 text-[#0B0B0C] font-extrabold text-xs md:text-sm uppercase tracking-widest px-8 py-4 rounded-full shadow-lg transition-all duration-300 hover:scale-[1.02] font-sans"
                   >
-                    Comenzar Auditoría Operativa Completa
+                    Ver mi desglose exacto
                   </button>
                   
                   <span className="text-[9px] font-extrabold text-neutral-500 uppercase tracking-widest mt-1">
@@ -3138,6 +3311,60 @@ function AuditoriaFormContent() {
                     })}
                   </div>
                 </div>
+
+                {/* Huéspedes, Habitaciones, Baños */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                  {/* Huéspedes */}
+                  <div className="flex flex-col gap-2">
+                    <label htmlFor="max_guests" className="text-xs font-bold uppercase tracking-wider text-zinc-400">
+                      ¿Cuántos huéspedes máximo?
+                    </label>
+                    <input
+                      type="number"
+                      id="max_guests"
+                      name="max_guests"
+                      value={formData.max_guests}
+                      onChange={handleInputChange}
+                      required
+                      min="1"
+                      className="w-full bg-[#18181A] border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-[#00D1B2] focus:ring-1 focus:ring-[#00D1B2] transition-all font-mono"
+                    />
+                  </div>
+
+                  {/* Habitaciones */}
+                  <div className="flex flex-col gap-2">
+                    <label htmlFor="bedrooms" className="text-xs font-bold uppercase tracking-wider text-zinc-400">
+                      ¿Cuántas habitaciones?
+                    </label>
+                    <input
+                      type="number"
+                      id="bedrooms"
+                      name="bedrooms"
+                      value={formData.bedrooms}
+                      onChange={handleInputChange}
+                      required
+                      min="1"
+                      className="w-full bg-[#18181A] border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-[#00D1B2] focus:ring-1 focus:ring-[#00D1B2] transition-all font-mono"
+                    />
+                  </div>
+
+                  {/* Baños */}
+                  <div className="flex flex-col gap-2">
+                    <label htmlFor="bathrooms" className="text-xs font-bold uppercase tracking-wider text-zinc-400">
+                      ¿Cuántos baños?
+                    </label>
+                    <input
+                      type="number"
+                      id="bathrooms"
+                      name="bathrooms"
+                      value={formData.bathrooms}
+                      onChange={handleInputChange}
+                      required
+                      min="1"
+                      className="w-full bg-[#18181A] border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-[#00D1B2] focus:ring-1 focus:ring-[#00D1B2] transition-all font-mono"
+                    />
+                  </div>
+                </div>
               </div>
             )}
 
@@ -3194,6 +3421,27 @@ function AuditoriaFormContent() {
                       />
                     </div>
                     <span className="text-[10px] text-zinc-500">Suma estimada de todos tus costos mensuales de operación.</span>
+                  </div>
+
+                  {/* competitive_adr */}
+                  <div className="flex flex-col gap-2 bg-[#18181A] p-4 rounded-xl border border-white/5 md:col-span-2">
+                    <label htmlFor="competitive_adr" className="text-xs font-bold uppercase tracking-wider text-[#00D1B2]">
+                      ¿Precio promedio por noche en tu zona?
+                    </label>
+                    <div className="relative flex items-center mt-1">
+                      <input
+                        type="number"
+                        id="competitive_adr"
+                        name="competitive_adr"
+                        min="0"
+                        placeholder="$250"
+                        value={formData.competitive_adr}
+                        onChange={handleInputChange}
+                        onFocus={handleInputFocus}
+                        className="w-full bg-[#0B0B0C] border border-white/10 rounded-lg px-4 py-3 text-base text-white focus:outline-none focus:border-[#00D1B2] transition-all font-mono"
+                      />
+                    </div>
+                    <span className="text-[10px] text-zinc-500">Opcional. Tarifa promedio de competidores directos en tu área.</span>
                   </div>
                 </div>
 
@@ -3313,7 +3561,7 @@ function AuditoriaFormContent() {
                       Enviando...
                     </>
                   ) : (
-                    'Finalizar Auditoría 🚀'
+                    'Enviar diagnóstico a mi email'
                   )}
                 </button>
               )}
@@ -3415,6 +3663,128 @@ function AuditoriaFormContent() {
           </div>
         </div>
       )}
+
+      {/* MODAL CHECKOUT PAYPAL REPLICA */}
+      {isCheckoutModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="relative w-full max-w-[460px] bg-[#F5F7FA] rounded-2xl shadow-2xl overflow-hidden text-left flex flex-col font-sans border border-zinc-200">
+            {/* Header Close button */}
+            <button 
+              type="button"
+              onClick={() => {
+                setIsCheckoutModalOpen(false);
+                setAccessCode('');
+                setCheckoutError('');
+              }}
+              className="absolute top-4 right-4 text-zinc-400 hover:text-zinc-700 transition-colors text-lg p-1.5"
+            >
+              ✕
+            </button>
+
+            {/* Content Container */}
+            <div className="p-8 flex flex-col items-center">
+              {/* Logo AIRLOCAL */}
+              <div className="mb-6 flex items-center gap-1.5">
+                <span className="text-xl font-black text-[#0B0B0C] tracking-tight uppercase">AIRLOCAL</span>
+                <span className="h-4 w-[2px] bg-[#00D1B2]" />
+                <span className="text-xs font-bold text-[#00D1B2] tracking-widest uppercase">RADAR</span>
+              </div>
+
+              {/* Title & Description */}
+              <div className="w-full text-center mb-6">
+                <h3 className="text-lg md:text-xl font-bold text-[#0B0B0C] tracking-tight">
+                  Auditoría Operativa AIRLOCAL
+                </h3>
+                <p className="text-xs text-zinc-500 mt-2 font-medium leading-relaxed max-w-sm mx-auto">
+                  Análisis completo de tu operación STR: desglose de fugas, oportunidades de rescate y plan de acción prioritario para los próximos 30 días.
+                </p>
+              </div>
+
+              {/* Price Tag */}
+              <div className="w-full bg-white border border-zinc-200 rounded-2xl p-5 mb-6 text-center shadow-[0_4px_12px_rgba(0,0,0,0.02)]">
+                <span className="text-zinc-500 text-xs font-semibold block mb-0.5 uppercase tracking-wider">TOTAL A PAGAR</span>
+                <span className="text-3xl font-black text-[#003087] tracking-tight block mb-2">$45,00 USD</span>
+                <span 
+                  onClick={() => {
+                    setAccessCode('BETA2026');
+                    if (checkoutError) setCheckoutError('');
+                  }}
+                  className="text-[12px] font-bold text-[#008F79] bg-[#00D1B2]/10 border border-[#00D1B2]/20 rounded-full px-3.5 py-1 inline-block select-all cursor-pointer active:scale-[0.98] transition-all"
+                >
+                  Código de acceso beta: BETA2026
+                </span>
+              </div>
+
+              {/* Checkout Form */}
+              <div className="w-full flex flex-col gap-4">
+                <div className="flex flex-col gap-2">
+                  <label htmlFor="checkout_access_code" className="text-xs font-bold text-zinc-700 uppercase tracking-wider">
+                    Código de acceso (beta testers)
+                  </label>
+                  <input
+                    type="text"
+                    id="checkout_access_code"
+                    name="access_code"
+                    placeholder="Ej: BETA2026"
+                    required
+                    autoComplete="off"
+                    value={accessCode}
+                    onChange={(e) => {
+                      setAccessCode(e.target.value);
+                      if (checkoutError) setCheckoutError('');
+                    }}
+                    className="w-full bg-white border border-zinc-300 rounded-xl px-4 py-3.5 text-base text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-[#003087] focus:ring-1 focus:ring-[#003087] shadow-inner transition-all font-mono text-center tracking-widest font-bold"
+                  />
+                  {checkoutError && (
+                    <span className="text-xs font-bold text-red-600 animate-pulse mt-0.5 text-center">
+                      ⚠ {checkoutError}
+                    </span>
+                  )}
+                </div>
+
+                {/* Botón PayPal Style (amarillo/naranja grande o gris desactivado) */}
+                <button
+                  type="button"
+                  onClick={handleConfirmCheckout}
+                  className={`w-full font-black text-sm uppercase tracking-widest py-4 rounded-full transition-all flex items-center justify-center gap-2 mt-2 ${
+                    accessCode.toUpperCase() === 'BETA2026'
+                      ? 'bg-[#FFC439] hover:bg-[#F2B224] text-[#003087] shadow-[0_4px_14px_rgba(255,196,57,0.4)] hover:scale-[1.01]'
+                      : 'bg-zinc-300 text-zinc-500 cursor-not-allowed opacity-75'
+                  }`}
+                >
+                  Confirmar y acceder
+                </button>
+
+                {/* Card logos replica from image */}
+                <div className="flex items-center justify-center gap-2 text-zinc-400 text-[10px] font-extrabold uppercase tracking-wider mt-2 select-none">
+                  <span className="px-2.5 py-1 border border-zinc-200 rounded-md bg-white text-[#003087] text-[9px] font-black">PayPal</span>
+                  <span className="px-2.5 py-1 border border-zinc-200 rounded-md bg-white text-[#1A1F71] text-[9px] font-black italic">VISA</span>
+                  <span className="px-2.5 py-1 border border-zinc-200 rounded-md bg-white text-[#EB001B] text-[9px] font-black">MC</span>
+                  <span className="text-[9px] font-bold text-zinc-500">+more</span>
+                </div>
+
+                {/* Cancel Link */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsCheckoutModalOpen(false);
+                    setAccessCode('');
+                    setCheckoutError('');
+                  }}
+                  className="text-xs font-bold text-[#003087]/70 hover:text-[#003087] hover:underline transition-colors mt-2 text-center"
+                >
+                  Cancelar y volver
+                </button>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="bg-[#ECEFF1] border-t border-zinc-200 py-3 text-center text-[10px] font-bold text-zinc-500 uppercase tracking-widest">
+              Versión beta - Acceso ilimitado
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -3440,19 +3810,6 @@ export default function AuditoriaTestPage() {
         {/* Outer content container */}
         <div className="flex-1 w-full max-w-[1440px] mx-auto flex flex-col pt-16 md:pt-24 pb-12 px-4 sm:px-8 lg:px-12">
           
-          {/* 2. HERO SUPERIOR */}
-          <div className="text-center mb-10 w-full animate-in fade-in slide-in-from-bottom-4 duration-700">
-            <div className="inline-block px-3 py-1.5 rounded-full border border-[#00D1B2]/20 bg-[#00D1B2]/10 text-[#00D1B2] text-[10px] md:text-xs font-bold tracking-widest uppercase mb-6 shadow-[0_0_15px_rgba(0,209,178,0.1)] animate-pulse">
-              AUDITORÍA OPERATIVA COMPLETA
-            </div>
-            <h1 className="text-3xl md:text-5xl font-bold tracking-tight text-white mb-6 leading-tight max-w-2xl mx-auto">
-              Vamos a construir tu plan de acción.
-            </h1>
-            <p className="text-base md:text-lg text-zinc-400 max-w-xl mx-auto leading-relaxed mb-6">
-              Ya sabemos cómo está tu operation. Ahora vamos a identificar exactamente qué corregir — y en qué orden. Tómate 5 minutos. Vale cada segundo.
-            </p>
-          </div>
-
           {/* 3. MULTI-STEP NATIVE FORM COMPONENT */}
           <AuditoriaFormContent />
 

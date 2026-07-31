@@ -41,3 +41,21 @@ yarn-error.log*
 next-env.d.ts
 
 .vercel
+
+# debug / scratch scripts (n8n + report engine inspection) — kept locally, not part of the app
+/check_*.js
+/print_*.js
+/get_*.js
+/find_*.js
+/list_*.js
+/compare_*.js
+/inspect_*.js
+/read_*.js
+/search_*.js
+/update_*.js
+/test_*.js
+/execution_*.json
+/live_workflow_*.json
+/n8n_workflow_*.json
+/rr_engine_premium_code.js
+/rr_free_engine_code.js

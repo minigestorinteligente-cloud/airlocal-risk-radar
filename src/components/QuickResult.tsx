@@ -193,6 +193,8 @@ export default function QuickResult() {
     }
   }
 
+  const hasN8nData = !!report;
+
   // Dynamic Calculated Data based on N8N variables and robust fallbacks
   const commissionVal = Number(metrics?.platfom_commission || report?.report_data?.platfom_commission || (statusFromUrl === 'saludable' ? 120 : statusFromUrl === 'critico' ? 750 : 450));
   const cleaningVal = Number(metrics?.cleaning_cost || report?.report_data?.cleaning_cost || (statusFromUrl === 'saludable' ? 180 : statusFromUrl === 'critico' ? 500 : 300));
@@ -204,15 +206,35 @@ export default function QuickResult() {
   const totalCostsVal = commissionVal + cleaningVal + servicesVal + maintenanceVal + taxVal + hiddenVal;
 
   const calculatedData = {
-    ahorroLimpieza: Math.round(cleaningVal * 0.25) || 75,
-    porcentajeOta: Math.round((commissionVal / (rawRev || 1)) * 100) || 15,
-    fugaComisiones: Math.round(commissionVal * 0.35) || 150,
-    excesoServicios: Math.round((servicesVal / (totalCostsVal || 1)) * 100) || 12,
-    recuperacionAnual: Math.round((cleaningVal * 0.25 + commissionVal * 0.35 + servicesVal * 0.15) * 12) || 3840,
-    percentilActual: riskLevel === 'LOW' ? 72 : riskLevel === 'MEDIUM' ? 40 : 15,
-    percentilObjetivo: riskLevel === 'LOW' ? 90 : riskLevel === 'MEDIUM' ? 78 : 65,
-    userOccupancy: Math.round(occupationPct)
+    ahorroLimpieza: hasN8nData
+      ? (Number(rData.oportunidades_rentabilidad?.ranking?.find((r: any) => String(r.tipo || r.pilar || '').toLowerCase().includes('limpieza'))?.impacto_mensual) || 0)
+      : Math.round(cleaningVal * 0.25) || 75,
+    porcentajeOta: hasN8nData
+      ? (rData.radar_fugas?.tus_costos_pct?.[0] || 0)
+      : Math.round((commissionVal / (rawRev || 1)) * 100) || 15,
+    fugaComisiones: hasN8nData
+      ? (Number(rData.oportunidades_rentabilidad?.ranking?.find((r: any) => String(r.tipo || r.pilar || '').toLowerCase().includes('comisiones'))?.impacto_mensual) || 0)
+      : Math.round(commissionVal * 0.35) || 150,
+    excesoServicios: hasN8nData
+      ? (rData.radar_fugas?.tus_costos_pct?.[2] || 0)
+      : Math.round((servicesVal / (totalCostsVal || 1)) * 100) || 12,
+    recuperacionAnual: hasN8nData
+      ? (rData.oportunidades_rentabilidad?.oportunidad_total_anual || free?.hero_anual || 0)
+      : Math.round((cleaningVal * 0.25 + commissionVal * 0.35 + servicesVal * 0.15) * 12) || 3840,
+    percentilActual: hasN8nData
+      ? (rData.oportunidades_rentabilidad?.principal?.score_actual || (riskLevel === 'LOW' ? 72 : riskLevel === 'MEDIUM' ? 40 : 15))
+      : (riskLevel === 'LOW' ? 72 : riskLevel === 'MEDIUM' ? 40 : 15),
+    percentilObjetivo: hasN8nData
+      ? (rData.oportunidades_rentabilidad?.principal?.score_maximo || (riskLevel === 'LOW' ? 90 : riskLevel === 'MEDIUM' ? 78 : 65))
+      : (riskLevel === 'LOW' ? 90 : riskLevel === 'MEDIUM' ? 78 : 65),
+    userOccupancy: hasN8nData
+      ? (rData.oportunidades_rentabilidad?.ocupacion_actual || metrics?.ocupacion_pct || metrics?.occupancy_pct || 0)
+      : Math.round(occupationPct)
   };
+
+  const scoreVal = hasN8nData
+    ? (rData.tacometro?.score_final || rData.tacometro?.score || Math.max(10, 100 - (metrics?.expense_ratio || 0)))
+    : Math.max(10, 100 - (metrics?.expense_ratio || (rawRev > 0 ? Math.round((lossPotential / rawRev) * 100) : 48)));
 
   // Texts for Dynamic Button
   let ctaText = '👉 Ver diagnóstico completo';
@@ -427,7 +449,7 @@ export default function QuickResult() {
             TACÓMETRO DE EFICIENCIA OPERATIVA
           </span>
           <span className="text-[10px] bg-zinc-800/80 px-2 py-0.5 rounded text-zinc-400 font-mono font-bold">
-            Salud: {Math.max(10, 100 - (metrics?.expense_ratio || (rawRev > 0 ? Math.round((lossPotential / rawRev) * 100) : 48)))}/100
+            Salud: {scoreVal}/100
           </span>
         </div>
 
@@ -456,7 +478,7 @@ export default function QuickResult() {
                   strokeWidth="14" 
                   strokeLinecap="round" 
                   strokeDasharray="251.2"
-                  strokeDashoffset={251.2 - (251.2 * Math.max(10, 100 - (metrics?.expense_ratio || (rawRev > 0 ? Math.round((lossPotential / rawRev) * 100) : 48)))) / 100}
+                  strokeDashoffset={251.2 - (251.2 * scoreVal) / 100}
                   className="transition-all duration-1000 ease-out"
                 />
               </svg>
@@ -464,7 +486,7 @@ export default function QuickResult() {
               <div 
                 className="absolute bottom-0 left-1/2 w-1 h-20 bg-[#00D1B2] rounded-t-full origin-bottom transition-transform duration-1000 ease-out shadow-[0_0_10px_rgba(0,209,178,0.5)]"
                 style={{ 
-                  transform: `translateX(-50%) rotate(${(Math.max(10, 100 - (metrics?.expense_ratio || (rawRev > 0 ? Math.round((lossPotential / rawRev) * 100) : 48))) / 100) * 180 - 90}deg)`
+                  transform: `translateX(-50%) rotate(${(scoreVal / 100) * 180 - 90}deg)`
                 }}
               />
               <div className="absolute bottom-0 left-1/2 w-3 h-3 rounded-full bg-white border-2 border-[#121318] -translate-x-1/2 translate-y-1/2 shadow-md z-20" />
@@ -472,7 +494,7 @@ export default function QuickResult() {
 
             <div className="text-center">
               <span className="text-2xl font-black text-white">
-                {Math.max(10, 100 - (metrics?.expense_ratio || (rawRev > 0 ? Math.round((lossPotential / rawRev) * 100) : 48)))}
+                {scoreVal}
               </span>
               <span className="text-zinc-500 text-xs font-bold"> / 100</span>
               <div className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest mt-1">
@@ -581,28 +603,35 @@ export default function QuickResult() {
           <h3 className="text-lg md:text-xl font-bold text-white mb-2 leading-tight">
             Tu plan de acción completo está listo.
           </h3>
-          
           <div className="space-y-4 pt-2">
             {[
               { 
                 title: "① Plan de acción priorizado por unidad", 
                 desc: `Se detectó que negociando una tarifa plana de limpieza mensual y redirigiendo un ${calculatedData.porcentajeOta}% del volumen de OTA hacia el motor de reservas directas de Airlocal, se optimizará el flujo libre de caja de manera inmediata.`, 
-                impact: "+$320 USD/MES" 
+                impact: hasN8nData
+                  ? `+$${rData.oportunidades_rentabilidad?.oportunidad_total_mensual || free?.hero_mensual || 320} USD/MES`
+                  : "+$320 USD/MES" 
               },
               { 
                 title: "② Fugas detectadas por categoría de costo", 
                 desc: `Comisión de plataformas sobrepasada por no modular el mark-up de precios y un consumo excedentario del ${calculatedData.excesoServicios}% en servicios básicos atribuible a la gestión operativa analizada.`, 
-                impact: "-$210 USD/MES" 
+                impact: hasN8nData
+                  ? `-$${rData.oportunidades_rentabilidad?.oportunidad?.valor_principal || metrics?.perdida_potencial || 210} USD/MES`
+                  : "-$210 USD/MES" 
               },
               { 
                 title: "③ Proyección de recuperación anual", 
                 desc: "Aplicando los focos de optimización descritos basados en tus costos reales, se proyecta un rescate anualizado de capital de manera 100% pasiva.", 
-                impact: "+$8,100 USD/AÑO" 
+                impact: hasN8nData
+                  ? `+$${(rData.oportunidades_rentabilidad?.oportunidad_total_anual || free?.hero_anual || 8100).toLocaleString('en-US')} USD/AÑO`
+                  : "+$8,100 USD/AÑO" 
               },
               { 
                 title: "④ Ranking de rentabilidad de tu portafolio", 
                 desc: `Esta unidad con ${calculatedData.userOccupancy}% de ocupación se localiza en el percentil ${calculatedData.percentilActual}% del mercado de tu ciudad. Al automatizar las tareas prioritarias, ascenderá limpiamente al percentil ${calculatedData.percentilObjetivo}% del top regional.`, 
-                impact: "PERCENTIL 18% TOP" 
+                impact: hasN8nData
+                  ? `PERCENTIL ${rData.oportunidades_rentabilidad?.principal?.score_actual || rData.oportunidades_rentabilidad?.principal?.score || 18}% TOP`
+                  : "PERCENTIL 18% TOP" 
               }
             ].map((item, i) => (
               <div key={i} className="bg-[#1A1B22] border border-zinc-800/40 p-4 rounded-xl transition-all hover:border-zinc-700/50">
