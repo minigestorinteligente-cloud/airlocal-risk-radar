@@ -12,9 +12,9 @@ export default function LandingPage() {
     <main className="min-h-screen bg-[#080C0A] text-[#E8F0ED] overflow-x-hidden" style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
 
       <style dangerouslySetInnerHTML={{ __html: `
-        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap');
 
-        .font-serif-display { font-family: 'Playfair Display', Georgia, serif; }
+        .font-display { font-family: 'Manrope', system-ui, sans-serif; }
         .font-mono-data { font-family: 'JetBrains Mono', monospace; }
 
         [data-reveal] {
@@ -126,9 +126,9 @@ export default function LandingPage() {
             <div className="w-7 h-7 rounded-full bg-[#34F5C5] text-[#080C0A] flex items-center justify-center font-bold text-xs shadow-[0_0_16px_rgba(52,245,197,0.5)]">A</div>
             <span className="font-bold tracking-[0.2em] text-white uppercase text-[11px]">AIRLOCAL</span>
             <span className="text-[#34F5C5]/40 text-xs">·</span>
-            <span className="text-zinc-500 text-[11px] font-medium tracking-wider">Risk Radar</span>
+            <span className="text-[#6E8C82] text-[11px] font-medium tracking-wider">Risk Radar</span>
           </div>
-          <span className="font-mono-data text-[9px] text-zinc-700 uppercase tracking-[0.18em] pl-10">Inteligencia operativa · STR</span>
+          <span className="font-mono-data text-[9px] text-[#334D44] uppercase tracking-[0.18em] pl-10">Inteligencia operativa · STR</span>
         </div>
         <Link
           href="/auditoria-test"
@@ -139,7 +139,7 @@ export default function LandingPage() {
       </header>
 
       {/* ─── HERO — La pregunta que nadie se hace ─── */}
-      <section className="relative w-full min-h-[95vh] flex flex-col items-center justify-center px-6 py-24 overflow-hidden">
+      <section className="relative w-full min-h-[90vh] flex flex-col items-center justify-center px-6 py-16 overflow-hidden">
         {/* Map background — sutil */}
         <div className="absolute inset-0">
           <Image src="/hero-map-bg.png" alt="" fill className="object-cover opacity-[0.12] saturate-0" priority />
@@ -157,19 +157,19 @@ export default function LandingPage() {
           </div>
 
           {/* Headline — serif editorial */}
-          <h1 className="font-serif-display text-5xl md:text-6xl lg:text-[80px] font-black text-white leading-[1.08] tracking-tight mb-8" data-reveal style={{ transitionDelay: '0.08s' }}>
+          <h1 className="font-display text-5xl md:text-6xl lg:text-[80px] font-black text-white leading-[1.08] tracking-tight mb-8" data-reveal style={{ transitionDelay: '0.08s' }}>
             ¿Tu operación<br/>
             realmente genera<br/>
             <span className="text-shimmer">ganancias…</span><br/>
-            <span className="text-zinc-400 font-bold" style={{ fontStyle: 'italic' }}>o solo ingresos?</span>
+            <span className="text-[#9DB5AD] font-bold" style={{ fontWeight: 600, opacity: 0.7 }}>o solo ingresos?</span>
           </h1>
 
           {/* Body */}
-          <p className="text-lg md:text-xl text-zinc-400 max-w-xl leading-relaxed mb-4" data-reveal style={{ transitionDelay: '0.16s' }}>
+          <p className="text-lg md:text-xl text-[#9DB5AD] max-w-xl leading-relaxed mb-4" data-reveal style={{ transitionDelay: '0.16s' }}>
             La mayoría de propietarios con buena ocupación<br/>
             <strong className="text-zinc-200">nunca ha verificado si realmente gana dinero.</strong>
           </p>
-          <p className="font-mono-data text-zinc-600 text-xs uppercase tracking-widest mb-14" data-reveal style={{ transitionDelay: '0.22s' }}>
+          <p className="font-mono-data text-[#4A6459] text-xs uppercase tracking-widest mb-14" data-reveal style={{ transitionDelay: '0.22s' }}>
             No es culpa tuya. Los números que ves no son los que importan.
           </p>
 
@@ -194,27 +194,27 @@ export default function LandingPage() {
             >
               Descubrir la verdad de mi operación →
             </Link>
-            <p className="font-mono-data text-zinc-600 text-xs uppercase tracking-widest">Sin instalación · Sin tarjeta · 90 segundos</p>
+            <p className="font-mono-data text-[#4A6459] text-xs uppercase tracking-widest">Sin instalación · Sin compromiso · 90 segundos</p>
           </div>
         </div>
       </section>
 
       {/* ─── PROBLEMA — El dinero invisible ─── */}
-      <section className="w-full py-32 lg:py-40 px-6 border-t border-white/[0.05] stripe-bg">
+      <section className="w-full py-20 lg:py-28 px-6 border-t border-white/[0.05] stripe-bg">
         <div className="max-w-6xl mx-auto">
 
-          <div className="max-w-3xl mb-20" data-reveal-x>
+          <div className="max-w-3xl mb-12" data-reveal-x>
             <p className="font-mono-data text-[#34F5C5] text-[10px] uppercase tracking-[0.3em] mb-6">El problema real</p>
-            <h2 className="font-serif-display text-4xl md:text-5xl lg:text-[58px] font-black text-white leading-[1.1] mb-6">
+            <h2 className="font-display text-4xl md:text-5xl lg:text-[58px] font-black text-white leading-[1.1] mb-6">
               El problema no es<br/>tu ocupación.
             </h2>
             <div className="w-10 h-[2px] bg-[#34F5C5] mb-8" />
-            <p className="text-xl text-zinc-400 leading-relaxed">
+            <p className="text-xl text-[#9DB5AD] leading-relaxed">
               Es que <strong className="text-white">sin los números correctos</strong>, cada decisión es una apuesta. No un plan.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-24">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-14">
             {[
               { n: '01', h: 'No sabes tu punto de equilibrio real', b: 'Cuántas noches mínimas necesitas para no perder dinero este mes. Sin eso, no sabes qué tan cerca del filo estás operando.' },
               { n: '02', h: 'Tienes costos que no estás midiendo', b: 'Comisiones, limpieza, mantenimiento, impuestos. Cada uno erosiona el margen en silencio, mes a mes.' },
@@ -227,15 +227,15 @@ export default function LandingPage() {
                 data-reveal
                 style={{ transitionDelay: `${i * 0.09}s` }}
               >
-                <span className="font-mono-data text-zinc-700 text-[10px] tracking-[0.25em] block mb-5">{p.n}</span>
-                <h3 className="font-serif-display text-xl md:text-2xl font-bold text-white mb-4 leading-snug group-hover:text-[#34F5C5] transition-colors">{p.h}</h3>
-                <p className="text-zinc-500 leading-relaxed text-sm">{p.b}</p>
+                <span className="font-mono-data text-[#334D44] text-[10px] tracking-[0.25em] block mb-5">{p.n}</span>
+                <h3 className="font-display text-xl md:text-2xl font-bold text-white mb-4 leading-snug group-hover:text-[#34F5C5] transition-colors">{p.h}</h3>
+                <p className="text-[#6E8C82] leading-relaxed text-sm">{p.b}</p>
               </div>
             ))}
           </div>
 
           <div className="max-w-4xl mx-auto text-center py-20 border-y border-white/[0.06]" data-reveal>
-            <p className="font-serif-display text-3xl md:text-4xl lg:text-[52px] font-bold text-white leading-[1.15]">
+            <p className="font-display text-3xl md:text-4xl lg:text-[52px] font-bold text-white leading-[1.15]">
               Cada mes sin esta claridad<br/>
               <span className="text-[#34F5C5]">es dinero que ya no vuelve.</span>
             </p>
@@ -244,16 +244,16 @@ export default function LandingPage() {
       </section>
 
       {/* ─── LOS 3 AGENTES — Qué obtienes ─── */}
-      <section className="w-full py-32 lg:py-40 px-6 bg-[#060A07]">
+      <section className="w-full py-20 lg:py-28 px-6 bg-[#060A07]">
         <div className="max-w-6xl mx-auto">
 
-          <div className="text-center max-w-3xl mx-auto mb-24" data-reveal>
+          <div className="text-center max-w-3xl mx-auto mb-14" data-reveal>
             <p className="font-mono-data text-[#34F5C5] text-[10px] uppercase tracking-[0.3em] mb-6">Lo que obtienes</p>
-            <h2 className="font-serif-display text-4xl md:text-5xl lg:text-[58px] font-black text-white leading-[1.1] mb-6">
+            <h2 className="font-display text-4xl md:text-5xl lg:text-[58px] font-black text-white leading-[1.1] mb-6">
               Tu copiloto operativo.<br/>
-              <span className="text-zinc-500 font-bold" style={{ fontStyle: 'italic' }}>Tres perspectivas. Una decisión.</span>
+              <span className="text-[#6E8C82] font-bold" style={{ fontWeight: 600, opacity: 0.7 }}>Tres perspectivas. Una decisión.</span>
             </h2>
-            <p className="text-zinc-500 text-lg leading-relaxed">
+            <p className="text-[#6E8C82] text-lg leading-relaxed">
               No es inteligencia artificial que te da datos.<br/>
               Es un proceso que te dice <strong className="text-zinc-300">exactamente qué hacer.</strong>
             </p>
@@ -271,15 +271,15 @@ export default function LandingPage() {
               </div>
               <div>
                 <p className="font-mono-data text-[#34F5C5]/60 text-[9px] uppercase tracking-[0.3em] font-bold mb-3">El Guardián</p>
-                <h3 className="font-serif-display text-2xl md:text-3xl font-bold text-white mb-4 leading-snug">
+                <h3 className="font-display text-2xl md:text-3xl font-bold text-white mb-4 leading-snug">
                   Sabe si existe<br/>un problema real.
                 </h3>
-                <p className="text-zinc-500 leading-relaxed">
+                <p className="text-[#6E8C82] leading-relaxed">
                   No asume. <strong className="text-zinc-300">Verifica.</strong> Analiza tu estado operativo y te dice en números si tu margen es sostenible o si ya estás perdiendo.
                 </p>
               </div>
               <div className="mt-auto pt-6 border-t border-white/[0.06]">
-                <p className="font-mono-data text-zinc-700 text-[11px]">Score operativo · Punto de equilibrio · Colchón</p>
+                <p className="font-mono-data text-[#334D44] text-[11px]">Score operativo · Punto de equilibrio · Colchón</p>
               </div>
             </div>
 
@@ -293,10 +293,10 @@ export default function LandingPage() {
               </div>
               <div>
                 <p className="font-mono-data text-[#34F5C5] text-[9px] uppercase tracking-[0.3em] font-bold mb-3">El Cazafugas</p>
-                <h3 className="font-serif-display text-2xl md:text-3xl font-bold text-white mb-4 leading-snug">
+                <h3 className="font-display text-2xl md:text-3xl font-bold text-white mb-4 leading-snug">
                   Encuentra exactamente<br/>dónde se pierde.
                 </h3>
-                <p className="text-zinc-400 leading-relaxed">
+                <p className="text-[#9DB5AD] leading-relaxed">
                   Comisiones. Limpieza. Precios bajos. Cada fuga tiene <strong className="text-white">un número concreto</strong> y un potencial de recuperación estimado.
                 </p>
               </div>
@@ -315,15 +315,15 @@ export default function LandingPage() {
               </div>
               <div>
                 <p className="font-mono-data text-[#34F5C5]/60 text-[9px] uppercase tracking-[0.3em] font-bold mb-3">El Estratega</p>
-                <h3 className="font-serif-display text-2xl md:text-3xl font-bold text-white mb-4 leading-snug">
+                <h3 className="font-display text-2xl md:text-3xl font-bold text-white mb-4 leading-snug">
                   Decide qué corregir<br/>primero.
                 </h3>
-                <p className="text-zinc-500 leading-relaxed">
+                <p className="text-[#6E8C82] leading-relaxed">
                   Con todas las variables sobre la mesa, <strong className="text-zinc-300">prioriza la acción de mayor retorno</strong>. No más dudas. Un paso claro.
                 </p>
               </div>
               <div className="mt-auto pt-6 border-t border-white/[0.06]">
-                <p className="font-mono-data text-zinc-700 text-[11px]">Plan de acción · Impacto priorizado · Próximo paso</p>
+                <p className="font-mono-data text-[#334D44] text-[11px]">Plan de acción · Impacto priorizado · Próximo paso</p>
               </div>
             </div>
           </div>
@@ -331,7 +331,7 @@ export default function LandingPage() {
       </section>
 
       {/* ─── EL DIAGNÓSTICO — Glass report ─── */}
-      <section className="relative w-full py-32 lg:py-48 px-6 overflow-hidden">
+      <section className="relative w-full py-20 lg:py-28 px-6 overflow-hidden">
         {/* Map bg sutil */}
         <div className="absolute inset-0">
           <Image src="/hero-map-bg.png" alt="" fill className="object-cover opacity-[0.06] saturate-0" />
@@ -344,14 +344,14 @@ export default function LandingPage() {
             {/* Left — copy */}
             <div data-reveal-x>
               <p className="font-mono-data text-[#34F5C5] text-[10px] uppercase tracking-[0.3em] mb-6">El diagnóstico real</p>
-              <h2 className="font-serif-display text-4xl md:text-5xl font-black text-white leading-[1.1] mb-8">
+              <h2 className="font-display text-4xl md:text-5xl font-black text-white leading-[1.1] mb-8">
                 Así luce<br/>tu reporte.
               </h2>
-              <p className="text-xl text-zinc-400 leading-relaxed mb-8">
+              <p className="text-xl text-[#9DB5AD] leading-relaxed mb-8">
                 No es una demo ni una ilustración.<br/>
                 <strong className="text-white">Es el producto exacto que recibirás.</strong>
               </p>
-              <p className="text-zinc-600 leading-relaxed mb-12 text-sm">
+              <p className="text-[#4A6459] leading-relaxed mb-12 text-sm">
                 Eliminamos la incertidumbre de entrada: ya sabes exactamente qué información tendrás para tomar decisiones. No tienes que imaginarlo.
               </p>
               <div className="space-y-4">
@@ -378,7 +378,7 @@ export default function LandingPage() {
                 {/* Report header */}
                 <div className="px-6 py-5 border-b border-white/[0.06] flex items-center justify-between">
                   <div>
-                    <p className="font-mono-data text-[9px] text-zinc-600 uppercase tracking-widest mb-1">AUDITORÍA OPERATIVA COMPLETA</p>
+                    <p className="font-mono-data text-[9px] text-[#4A6459] uppercase tracking-widest mb-1">AUDITORÍA OPERATIVA COMPLETA</p>
                     <p className="text-white font-bold text-base">Villa Coral · Cancún, MX</p>
                   </div>
                   <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#34F5C5]/10 border border-[#34F5C5]/20 text-[#34F5C5] font-mono-data text-[10px] font-bold">
@@ -389,31 +389,31 @@ export default function LandingPage() {
                 {/* Score row */}
                 <div className="px-6 py-5 grid grid-cols-3 gap-4 border-b border-white/[0.05]">
                   <div>
-                    <p className="font-mono-data text-zinc-700 text-[9px] uppercase tracking-wider mb-1.5">Score</p>
-                    <p className="text-white font-bold text-3xl" style={{ fontFamily: 'JetBrains Mono' }}>86<span className="text-zinc-600 text-base">/100</span></p>
+                    <p className="font-mono-data text-[#334D44] text-[9px] uppercase tracking-wider mb-1.5">Score</p>
+                    <p className="text-white font-bold text-3xl" style={{ fontFamily: 'JetBrains Mono' }}>86<span className="text-[#4A6459] text-base">/100</span></p>
                   </div>
                   <div>
-                    <p className="font-mono-data text-zinc-700 text-[9px] uppercase tracking-wider mb-1.5">Margen neto</p>
-                    <p className="text-white font-bold text-3xl" style={{ fontFamily: 'JetBrains Mono' }}>38<span className="text-zinc-600 text-base">%</span></p>
+                    <p className="font-mono-data text-[#334D44] text-[9px] uppercase tracking-wider mb-1.5">Margen neto</p>
+                    <p className="text-white font-bold text-3xl" style={{ fontFamily: 'JetBrains Mono' }}>38<span className="text-[#4A6459] text-base">%</span></p>
                   </div>
                   <div>
-                    <p className="font-mono-data text-zinc-700 text-[9px] uppercase tracking-wider mb-1.5">Potencial</p>
+                    <p className="font-mono-data text-[#334D44] text-[9px] uppercase tracking-wider mb-1.5">Potencial</p>
                     <p className="text-[#34F5C5] font-bold text-3xl" style={{ fontFamily: 'JetBrains Mono' }}>+$420</p>
                   </div>
                 </div>
 
                 {/* Equilibrio */}
                 <div className="px-6 py-4 border-b border-white/[0.05] flex items-center justify-between">
-                  <p className="text-zinc-500 text-sm">Punto de equilibrio</p>
+                  <p className="text-[#6E8C82] text-sm">Punto de equilibrio</p>
                   <div className="flex items-center gap-3">
                     <span className="text-white font-bold text-sm font-mono-data">8 noches / mes</span>
-                    <span className="text-[10px] text-zinc-600 font-mono-data">Colchón: 14 noches</span>
+                    <span className="text-[10px] text-[#4A6459] font-mono-data">Colchón: 14 noches</span>
                   </div>
                 </div>
 
                 {/* Fugas */}
                 <div className="px-6 py-5">
-                  <p className="font-mono-data text-zinc-600 text-[9px] uppercase tracking-widest mb-4">FUGAS DETECTADAS · $420/mes</p>
+                  <p className="font-mono-data text-[#4A6459] text-[9px] uppercase tracking-widest mb-4">FUGAS DETECTADAS · $420/mes</p>
                   <div className="space-y-3.5">
                     {[
                       { l: 'Comisiones OTA', v: '+$180', w: 72, c: '#F06B6B' },
@@ -422,7 +422,7 @@ export default function LandingPage() {
                     ].map((f, i) => (
                       <div key={i}>
                         <div className="flex justify-between items-baseline mb-1.5">
-                          <span className="text-zinc-400 text-xs">{f.l}</span>
+                          <span className="text-[#9DB5AD] text-xs">{f.l}</span>
                           <span className="font-mono-data text-xs font-bold" style={{ color: f.c }}>{f.v}/mes</span>
                         </div>
                         <div className="h-1 rounded-full bg-white/[0.04]">
@@ -456,20 +456,20 @@ export default function LandingPage() {
           ].map((s, i) => (
             <div key={i} className="text-center" data-reveal style={{ transitionDelay: `${i * 0.07}s` }}>
               <p className="font-mono-data text-[#34F5C5] text-4xl md:text-5xl font-bold mb-2">{s.n}</p>
-              <p className="text-zinc-600 text-xs leading-relaxed max-w-[140px] mx-auto">{s.l}</p>
+              <p className="text-[#4A6459] text-xs leading-relaxed max-w-[140px] mx-auto">{s.l}</p>
             </div>
           ))}
         </div>
       </section>
 
       {/* ─── CÓMO FUNCIONA — Mínimo ─── */}
-      <section className="w-full py-32 lg:py-40 px-6">
+      <section className="w-full py-20 lg:py-28 px-6">
         <div className="max-w-4xl mx-auto text-center">
           <div className="mb-20" data-reveal>
             <p className="font-mono-data text-[#34F5C5] text-[10px] uppercase tracking-[0.3em] mb-6">El proceso</p>
-            <h2 className="font-serif-display text-4xl md:text-5xl font-black text-white leading-[1.1]">
+            <h2 className="font-display text-4xl md:text-5xl font-black text-white leading-[1.1]">
               Tres pasos.<br/>
-              <span className="text-zinc-500 font-bold" style={{ fontStyle: 'italic' }}>Sin integraciones, sin sistemas.</span>
+              <span className="text-[#6E8C82] font-bold" style={{ fontWeight: 600, opacity: 0.7 }}>Sin integraciones, sin sistemas.</span>
             </h2>
           </div>
 
@@ -484,8 +484,8 @@ export default function LandingPage() {
                 <div className="w-20 h-20 rounded-full bg-[#0C1410] border border-white/[0.08] flex items-center justify-center mb-6 z-10">
                   <span className="font-mono-data text-[#34F5C5] font-bold">{s.n}</span>
                 </div>
-                <h3 className="font-serif-display text-xl font-bold text-white mb-3">{s.h}</h3>
-                <p className="text-zinc-600 text-sm leading-relaxed">{s.b}</p>
+                <h3 className="font-display text-xl font-bold text-white mb-3">{s.h}</h3>
+                <p className="text-[#4A6459] text-sm leading-relaxed">{s.b}</p>
               </div>
             ))}
           </div>
@@ -493,7 +493,7 @@ export default function LandingPage() {
       </section>
 
       {/* ─── CTA FINAL ─── */}
-      <section className="relative w-full py-48 lg:py-64 px-6 overflow-hidden">
+      <section className="relative w-full py-20 lg:py-24 px-6 overflow-hidden">
         {/* Map bg */}
         <div className="absolute inset-0">
           <Image src="/hero-map-bg.png" alt="" fill className="object-cover opacity-[0.1] saturate-0" />
@@ -504,17 +504,17 @@ export default function LandingPage() {
         <div className="relative z-10 max-w-4xl mx-auto flex flex-col items-center text-center">
           <div className="h-px w-16 bg-[#34F5C5]/40 mb-12" data-reveal />
 
-          <h2 className="font-serif-display text-5xl md:text-6xl lg:text-[76px] font-black text-white leading-[1.05] tracking-tight mb-8" data-reveal style={{ transitionDelay: '0.06s' }}>
+          <h2 className="font-display text-5xl md:text-6xl lg:text-[76px] font-black text-white leading-[1.05] tracking-tight mb-8" data-reveal style={{ transitionDelay: '0.06s' }}>
             Comprueba si existe<br/>
             un problema real<br/>
             <span className="text-[#34F5C5]">en tu operación.</span>
           </h2>
 
-          <p className="text-xl text-zinc-400 max-w-xl leading-relaxed mb-4" data-reveal style={{ transitionDelay: '0.12s' }}>
+          <p className="text-xl text-[#9DB5AD] max-w-xl leading-relaxed mb-4" data-reveal style={{ transitionDelay: '0.12s' }}>
             No prometemos ahorrarte dinero.<br/>
             <strong className="text-white">Prometemos mostrarte la verdad operativa.</strong>
           </p>
-          <p className="text-zinc-700 font-mono-data text-xs uppercase tracking-widest mb-16" data-reveal style={{ transitionDelay: '0.16s' }}>
+          <p className="text-[#334D44] font-mono-data text-xs uppercase tracking-widest mb-16" data-reveal style={{ transitionDelay: '0.16s' }}>
             Una vez la veas, el siguiente paso se hace solo evidente.
           </p>
 
@@ -525,10 +525,10 @@ export default function LandingPage() {
             >
               Quiero saber la verdad →
             </Link>
-            <div className="flex items-center gap-5 text-zinc-700 font-mono-data text-[11px] uppercase tracking-widest">
+            <div className="flex items-center gap-5 text-[#334D44] font-mono-data text-[11px] uppercase tracking-widest">
               <span>Sin registro</span>
               <span className="text-[#34F5C5]/20">·</span>
-              <span>Sin tarjeta</span>
+              <span>Sin compromiso</span>
               <span className="text-[#34F5C5]/20">·</span>
               <span>STR en Latinoamérica</span>
             </div>
@@ -542,19 +542,19 @@ export default function LandingPage() {
           <div className="flex flex-col items-center md:items-start gap-3">
             <div className="flex items-center gap-2.5">
               <div className="w-6 h-6 rounded-full bg-[#34F5C5] text-[#080C0A] flex items-center justify-center font-bold text-[10px]">A</div>
-              <span className="font-bold tracking-[0.2em] text-zinc-400 uppercase text-[10px]">AIRLOCAL™ Risk Radar</span>
+              <span className="font-bold tracking-[0.2em] text-[#9DB5AD] uppercase text-[10px]">AIRLOCAL™ Risk Radar</span>
             </div>
-            <p className="font-mono-data text-zinc-700 text-[9px] leading-relaxed text-center md:text-left">
+            <p className="font-mono-data text-[#334D44] text-[9px] leading-relaxed text-center md:text-left">
               by propiqdata.com · Inteligencia operativa para STR en Latam
             </p>
           </div>
           <div className="flex flex-col items-center md:items-end gap-3">
-            <div className="flex gap-5 text-zinc-700 text-xs">
+            <div className="flex gap-5 text-[#334D44] text-xs">
               <Link href="/terms" className="hover:text-[#34F5C5] transition-colors">Términos</Link>
               <Link href="/privacy" className="hover:text-[#34F5C5] transition-colors">Privacidad</Link>
               <a href="mailto:soporte@propiqdata.com" className="hover:text-[#34F5C5] transition-colors">soporte@propiqdata.com</a>
             </div>
-            <p className="font-mono-data text-zinc-800 text-[10px] uppercase tracking-widest">© 2026 AIRLOCAL</p>
+            <p className="font-mono-data text-[#243D34] text-[10px] uppercase tracking-widest">© 2026 AIRLOCAL</p>
           </div>
         </div>
       </footer>
