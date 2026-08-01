@@ -44,20 +44,28 @@ body{
   animation:drift 8s ease-in-out infinite;
   filter:drop-shadow(0 8px 24px rgba(0,0,0,0.5));
 }
-.fi-key{ top:6%; left:6%; width:132px; height:132px; animation-delay:0s; }
-.fi-house{ top:13%; right:18%; width:112px; height:112px; animation-delay:1.4s; }
-.fi-calendar{ top:38%; left:9%; width:98px; height:98px; animation-delay:2.6s; }
-.fi-suitcase{ top:56%; right:14%; width:142px; height:142px; animation-delay:0.8s; }
-.fi-coin{ top:6%; left:43%; width:100px; height:100px; animation-delay:3.4s; }
-.fi-star{ bottom:24%; left:9%; width:104px; height:104px; animation-delay:1.9s; }
+.fi-key{ top:9%; left:16%; width:164px; height:164px; animation-delay:0s; }
+.fi-house{ top:11%; right:14%; width:154px; height:154px; animation-delay:1.4s; }
+.fi-calendar{ top:46%; left:9%; width:144px; height:144px; animation-delay:2.6s; }
+.fi-suitcase{ top:57%; right:8%; width:164px; height:164px; animation-delay:0.8s; }
+.fi-coin{ top:4%; left:41%; width:136px; height:136px; animation-delay:3.4s; }
+.fi-star{ bottom:18%; left:16%; width:144px; height:144px; animation-delay:1.9s; }
 
+@media (max-width:1100px){
+  .fi-key{ left:10%; width:130px; height:130px; }
+  .fi-house{ right:8%; width:120px; height:120px; }
+  .fi-calendar{ left:5%; width:112px; height:112px; }
+  .fi-suitcase{ right:4%; width:130px; height:130px; }
+  .fi-coin{ width:110px; height:110px; }
+  .fi-star{ left:10%; width:114px; height:114px; }
+}
 @media (max-width:900px){
-  .fi-key{ left:4%; width:88px; height:88px; }
-  .fi-house{ right:4%; width:78px; height:78px; }
-  .fi-calendar{ left:2%; width:70px; height:70px; }
+  .fi-key{ left:5%; width:96px; height:96px; }
+  .fi-house{ right:4%; width:88px; height:88px; }
+  .fi-calendar{ left:2%; width:80px; height:80px; }
   .fi-suitcase{ right:2%; width:96px; height:96px; }
-  .fi-coin{ width:70px; height:70px; }
-  .fi-star{ left:8%; width:74px; height:74px; }
+  .fi-coin{ width:80px; height:80px; }
+  .fi-star{ left:5%; width:82px; height:82px; }
 }
 @media (max-width:600px){
   .float-icon-img{ display:none; }
