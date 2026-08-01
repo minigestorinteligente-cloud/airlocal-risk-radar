@@ -433,9 +433,16 @@ export default function Home() {
       }
       requestAnimationFrame(step);
     }
-    document.querySelectorAll('.stat-pill [data-count]').forEach(el => {
-      animateCount(el, parseInt((el as HTMLElement).dataset.count || '0', 10));
-    });
+    const statEls = document.querySelectorAll('.stat-pill [data-count]');
+    const statObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          animateCount(entry.target, parseInt((entry.target as HTMLElement).dataset.count || '0', 10));
+          statObserver.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.6 });
+    statEls.forEach(el => statObserver.observe(el));
 
     const io = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
@@ -773,8 +780,8 @@ export default function Home() {
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
             </div>
             <div>
-              <h4>Sin tarjeta, sin compromiso</h4>
-              <p>El diagnóstico gratuito no pide pago ni contrato. Solo tus números.</p>
+              <h4>Sin instalaciones, sin integraciones</h4>
+              <p>Solo necesitas responder unas preguntas sobre tu operación.</p>
             </div>
           </div>
           <div className="trust-item reveal" style={{ transitionDelay: '0.16s' }}>
