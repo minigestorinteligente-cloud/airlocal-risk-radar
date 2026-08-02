@@ -375,7 +375,6 @@ function AuditoriaFormContent() {
   // MANEJO DE CAMBIOS E INTERACCIONES EN INPUTS (Limpieza de 0 inicial y soporte de strings vacíos)
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
-    e.target.setAttribute('data-touched', 'true');
     setFormData(prev => ({
       ...prev,
       [name]: type === 'number'
@@ -752,6 +751,25 @@ function AuditoriaFormContent() {
 
       if (fetchedData) {
         setN8nReport(fetchedData);
+
+        // Enriquecer columnas planas para nurturing (riesgo, profit, perdida_potencial)
+        if (supabaseClient && fetchedData.id) {
+          const rd = fetchedData.report_data || {};
+          const rawLevel: string = rd?.cabecera?.risk_level || rd?.free?.risk_level || '';
+          const up = rawLevel.toUpperCase();
+          const riesgoVal = (up === 'HIGH' || up.includes('CRÍTICO') || up.includes('CRITICO'))
+            ? 'CRÍTICO'
+            : (up === 'MEDIUM' || up.includes('VULNERABLE'))
+              ? 'VULNERABLE'
+              : 'SALUDABLE';
+          const profitVal = rd?.free?.metrics?.net_income ?? null;
+          const potencialVal = rd?.free?.hero_mensual ?? null;
+          supabaseClient.from('reports').update({
+            riesgo: riesgoVal,
+            profit: profitVal,
+            perdida_potencial: potencialVal,
+          }).eq('id', fetchedData.id).then(() => {});
+        }
       }
       
     } catch (error: any) {
@@ -2313,7 +2331,7 @@ function AuditoriaFormContent() {
                         value={formData.platfom_commission}
                         onChange={handleInputChange}
                         placeholder="Ej. 450"
-                        className="w-full bg-[#18181A] border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-[#00D1B2]"
+                        className="w-full bg-[#18181A] border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-zinc-400 focus:outline-none focus:border-[#00D1B2]"
                       />
                     </div>
                     {/* Limpieza */}
@@ -2328,7 +2346,7 @@ function AuditoriaFormContent() {
                         value={formData.cleaning_cost}
                         onChange={handleInputChange}
                         placeholder="Ej. 300"
-                        className="w-full bg-[#18181A] border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-[#00D1B2]"
+                        className="w-full bg-[#18181A] border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-zinc-400 focus:outline-none focus:border-[#00D1B2]"
                       />
                     </div>
                     {/* Servicios */}
@@ -2343,7 +2361,7 @@ function AuditoriaFormContent() {
                         value={formData.services_cost}
                         onChange={handleInputChange}
                         placeholder="Ej. 200"
-                        className="w-full bg-[#18181A] border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-[#00D1B2]"
+                        className="w-full bg-[#18181A] border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-zinc-400 focus:outline-none focus:border-[#00D1B2]"
                       />
                     </div>
                     {/* Mantenimiento */}
@@ -2358,7 +2376,7 @@ function AuditoriaFormContent() {
                         value={formData.maintenence_cost}
                         onChange={handleInputChange}
                         placeholder="Ej. 150"
-                        className="w-full bg-[#18181A] border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-[#00D1B2]"
+                        className="w-full bg-[#18181A] border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-zinc-400 focus:outline-none focus:border-[#00D1B2]"
                       />
                     </div>
                     {/* Impuestos */}
@@ -2373,7 +2391,7 @@ function AuditoriaFormContent() {
                         value={formData.tax_cost}
                         onChange={handleInputChange}
                         placeholder="Ej. 250"
-                        className="w-full bg-[#18181A] border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-[#00D1B2]"
+                        className="w-full bg-[#18181A] border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-zinc-400 focus:outline-none focus:border-[#00D1B2]"
                       />
                     </div>
                     {/* Otros Gastos */}
@@ -2388,7 +2406,7 @@ function AuditoriaFormContent() {
                         value={formData.Hidden_cost}
                         onChange={handleInputChange}
                         placeholder="Ej. 50"
-                        className="w-full bg-[#18181A] border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-[#00D1B2]"
+                        className="w-full bg-[#18181A] border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-zinc-400 focus:outline-none focus:border-[#00D1B2]"
                       />
                     </div>
                   </div>
@@ -3275,7 +3293,7 @@ function AuditoriaFormContent() {
       )}
     </div>
         )
-      ) : (
+      ) : currentStep > 0 ? (
         /* FORM CONTAINER PARA PASOS 1-4 Y CARGA */
         <div className="bg-[#121214] border border-white/5 rounded-2xl p-6 md:p-10 shadow-2xl relative overflow-hidden">
           {/* Glow de fondo */}
@@ -3322,7 +3340,7 @@ function AuditoriaFormContent() {
                       onChange={handleInputChange}
                       required
                       placeholder="Ej. Villa Coral, Apartamento Chacao, Loft Centro..."
-                      className="w-full bg-[#18181A] border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-[#00D1B2] focus:ring-1 focus:ring-[#00D1B2] transition-all"
+                      className="w-full bg-[#18181A] border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-zinc-400 focus:outline-none focus:border-[#00D1B2] focus:ring-1 focus:ring-[#00D1B2] transition-all"
                     />
                   </div>
 
@@ -3338,7 +3356,7 @@ function AuditoriaFormContent() {
                       value={formData.country}
                       onChange={handleInputChange}
                       placeholder="Ej. España"
-                      className="w-full bg-[#18181A] border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-[#00D1B2] focus:ring-1 focus:ring-[#00D1B2] transition-all"
+                      className="w-full bg-[#18181A] border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-zinc-400 focus:outline-none focus:border-[#00D1B2] focus:ring-1 focus:ring-[#00D1B2] transition-all"
                     />
                   </div>
 
@@ -3354,7 +3372,7 @@ function AuditoriaFormContent() {
                       value={formData.city}
                       onChange={handleInputChange}
                       placeholder="Ej. Barcelona"
-                      className="w-full bg-[#18181A] border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-[#00D1B2] focus:ring-1 focus:ring-[#00D1B2] transition-all"
+                      className="w-full bg-[#18181A] border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-zinc-400 focus:outline-none focus:border-[#00D1B2] focus:ring-1 focus:ring-[#00D1B2] transition-all"
                     />
                   </div>
                 </div>
@@ -3434,7 +3452,7 @@ function AuditoriaFormContent() {
                       onChange={handleInputChange}
                       required
                       min="1"
-                      className="w-full bg-[#18181A] border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-[#00D1B2] focus:ring-1 focus:ring-[#00D1B2] transition-all font-mono"
+                      className="w-full bg-[#18181A] border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-zinc-400 focus:outline-none focus:border-[#00D1B2] focus:ring-1 focus:ring-[#00D1B2] transition-all font-mono"
                     />
                   </div>
 
@@ -3451,7 +3469,7 @@ function AuditoriaFormContent() {
                       onChange={handleInputChange}
                       required
                       min="1"
-                      className="w-full bg-[#18181A] border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-[#00D1B2] focus:ring-1 focus:ring-[#00D1B2] transition-all font-mono"
+                      className="w-full bg-[#18181A] border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-zinc-400 focus:outline-none focus:border-[#00D1B2] focus:ring-1 focus:ring-[#00D1B2] transition-all font-mono"
                     />
                   </div>
 
@@ -3468,7 +3486,7 @@ function AuditoriaFormContent() {
                       onChange={handleInputChange}
                       required
                       min="1"
-                      className="w-full bg-[#18181A] border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-[#00D1B2] focus:ring-1 focus:ring-[#00D1B2] transition-all font-mono"
+                      className="w-full bg-[#18181A] border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-zinc-400 focus:outline-none focus:border-[#00D1B2] focus:ring-1 focus:ring-[#00D1B2] transition-all font-mono"
                     />
                   </div>
                 </div>
@@ -3618,7 +3636,7 @@ function AuditoriaFormContent() {
                     value={formData.email}
                     onChange={handleInputChange}
                     placeholder="Ej. usuario@propiqdata.com"
-                    className="w-full bg-[#18181A] border border-white/10 rounded-xl px-4 py-3.5 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-[#00D1B2] focus:ring-1 focus:ring-[#00D1B2] transition-all font-sans"
+                    className="w-full bg-[#18181A] border border-white/10 rounded-xl px-4 py-3.5 text-sm text-white placeholder-zinc-400 focus:outline-none focus:border-[#00D1B2] focus:ring-1 focus:ring-[#00D1B2] transition-all font-sans"
                   />
                   <span className="text-[10px] text-zinc-500 mt-1">Nunca compartiremos tus datos con terceros.</span>
                 </div>
@@ -3676,6 +3694,7 @@ function AuditoriaFormContent() {
           </div>
         )}
       </div>
+      ) : null
     )}
       {/* MODAL BETA DE TALLY / CAPTURA DE CORREO */}
       {isBetaModalOpen && (
@@ -3901,17 +3920,6 @@ export default function AuditoriaTestPage() {
     <Suspense fallback={<LoadingSkeleton />}>
       <main className="min-h-screen bg-[#0B0B0C] text-[#eeeeee] font-sans selection:bg-[#00FFD1]/30 flex flex-col overflow-x-hidden">
         
-        <style>{`
-          input[data-touched="true"], select[data-touched="true"] {
-            border-color: #00D1B2 !important;
-            background-color: rgba(0,209,178,0.05) !important;
-            color: white !important;
-          }
-          input[data-touched="true"]:focus, select[data-touched="true"]:focus {
-            box-shadow: 0 0 0 1px #00D1B2 !important;
-          }
-        `}</style>
-
         {/* NAV */}
         <header style={{position:'sticky',top:0,zIndex:50,display:'flex',alignItems:'center',justifyContent:'space-between',padding:'20px 6vw',borderBottom:'1px solid #252b21',backdropFilter:'blur(6px)',background:'rgba(10,12,10,0.85)'} as React.CSSProperties}>
           <Link href="/" style={{display:'flex',alignItems:'center',gap:10,textDecoration:'none'}}>

@@ -17,14 +17,15 @@ const LEVEL_CONFIG: Record<string, { label: string; color: string; glow: string;
 
 function getLevelKey(report: any): string {
   const raw: string =
-    report?.nivel_alerta ||
-    report?.report_data?.nivel_alerta ||
-    report?.report_data?.free?.nivel_alerta ||
+    report?.riesgo ||
+    report?.report_data?.cabecera?.risk_level ||
+    report?.report_data?.free?.risk_level ||
     report?.report_data?.cabecera?.nivel_alerta ||
+    report?.report_data?.free?.nivel_alerta ||
     '';
   const up = raw.toUpperCase();
-  if (up.includes('CRÍTICO') || up.includes('CRITICO')) return 'CRÍTICO';
-  if (up.includes('VULNERABLE')) return 'VULNERABLE';
+  if (up.includes('CRÍTICO') || up.includes('CRITICO') || up === 'HIGH') return 'CRÍTICO';
+  if (up.includes('VULNERABLE') || up === 'MEDIUM') return 'VULNERABLE';
   return 'SALUDABLE';
 }
 
@@ -39,9 +40,9 @@ function getHeadline(report: any): string {
 
 function getPotencial(report: any): string {
   const val =
-    report?.report_data?.guardian_conclusion?.kpis?.impacto_mensual_detectado ||
+    report?.perdida_potencial ||
     report?.report_data?.free?.hero_mensual ||
-    report?.potencial_mensual ||
+    (report?.report_data?.guardian_conclusion?.kpis?.impacto_mensual_detectado || 0) ||
     null;
   if (!val) return '';
   const str = String(val);
@@ -52,7 +53,11 @@ function getPotencial(report: any): string {
 }
 
 function getPropertyName(report: any): string {
-  return report?.property_name || report?.report_data?.free?.user_summary?.property_name || 'Propiedad analizada';
+  return (
+    report?.report_data?.free?.user_summary?.property_name ||
+    report?.report_data?.cabecera?.property_name ||
+    'Propiedad analizada'
+  );
 }
 
 export default function SharedReportPage() {
@@ -66,7 +71,7 @@ export default function SharedReportPage() {
     if (!id || !supabase) { setLoading(false); setNotFound(true); return; }
     supabase
       .from('reports')
-      .select('id, property_name, nivel_alerta, titulo_principal, potencial_mensual, report_data, created_at')
+      .select('id, email, assessment_code, riesgo, profit, perdida_potencial, report_data, created_at')
       .eq('id', id)
       .single()
       .then(({ data, error }: { data: any; error: any }) => {
