@@ -375,9 +375,10 @@ function AuditoriaFormContent() {
   // MANEJO DE CAMBIOS E INTERACCIONES EN INPUTS (Limpieza de 0 inicial y soporte de strings vacíos)
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
+    e.target.setAttribute('data-touched', 'true');
     setFormData(prev => ({
       ...prev,
-      [name]: type === 'number' 
+      [name]: type === 'number'
         ? (value === '' ? '' : Math.round(Number(value)))
         : value
     }));
@@ -1901,14 +1902,14 @@ function AuditoriaFormContent() {
           <p className="text-base md:text-lg text-zinc-400 max-w-lg mx-auto leading-relaxed mb-10">
             Responde unas preguntas sobre tu operación y en 90 segundos verás exactamente dónde está tu dinero — y cuánto podrías estar dejando sobre la mesa.
           </p>
-          <div className="flex flex-col gap-3 mb-10 text-left w-full max-w-sm mx-auto">
+          <div className="flex flex-col gap-4 mb-10 text-left w-full max-w-sm mx-auto">
             {[
-              { icon: '🔍', text: 'Detecta si tu operación es saludable, vulnerable o crítica' },
-              { icon: '📊', text: 'Analiza tus métricas frente al benchmark del mercado' },
-              { icon: '🎯', text: 'Prioriza la intervención con mayor impacto económico' },
-            ].map(({ icon, text }) => (
-              <div key={text} className="flex items-start gap-3 text-zinc-300 text-sm">
-                <span className="text-base leading-none mt-0.5">{icon}</span>
+              { img: '/assets/icon-guardian.webp', text: 'Detecta si tu operación es saludable, vulnerable o crítica' },
+              { img: '/assets/icon-cazafugas.webp', text: 'Analiza tus métricas frente al benchmark del mercado' },
+              { img: '/assets/icon-estratega.webp', text: 'Prioriza la intervención con mayor impacto económico' },
+            ].map(({ img, text }) => (
+              <div key={text} className="flex items-center gap-4 text-zinc-300 text-sm">
+                <img src={img} alt="" style={{ width: 48, height: 48, objectFit: 'contain', flexShrink: 0 }} />
                 <span>{text}</span>
               </div>
             ))}
@@ -2030,40 +2031,6 @@ function AuditoriaFormContent() {
           </div>
         ) : (
         <div className="space-y-8 animate-in fade-in zoom-in-95 duration-500 text-left w-full">
-
-            {/* SHARE BUTTON */}
-            {n8nReport?.id && (
-              <div className="flex justify-end">
-                <button
-                  type="button"
-                  onClick={async () => {
-                    const url = `${window.location.origin}/r/${n8nReport.id}`;
-                    try {
-                      if (navigator.share) {
-                        await navigator.share({ title: 'Mi Diagnóstico Express · AIRLOCAL', url });
-                      } else {
-                        await navigator.clipboard.writeText(url);
-                        setLinkCopied(true);
-                        setTimeout(() => setLinkCopied(false), 3000);
-                      }
-                    } catch {}
-                  }}
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-white/10 bg-white/5 hover:bg-white/10 text-zinc-400 hover:text-white text-xs font-bold uppercase tracking-wider transition-all duration-200"
-                >
-                  {linkCopied ? (
-                    <>
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                      Enlace copiado
-                    </>
-                  ) : (
-                    <>
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
-                      Compartir diagnóstico
-                    </>
-                  )}
-                </button>
-              </div>
-            )}
 
             {/* CABECERA DE RESUMEN INICIAL */}
             <div className="w-full bg-gradient-to-b from-[#1A1D23] to-[#0B0C10] border border-[#2E333C]/40 rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] p-8 mb-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 transition-all hover:border-zinc-700/50">
@@ -3225,29 +3192,41 @@ function AuditoriaFormContent() {
           </div>
           {!isUnlocked && (
             <div className="absolute inset-x-0 top-12 flex flex-col items-center justify-start z-30 px-4">
-              <div className="w-full max-w-2xl bg-gradient-to-b from-[#1A1D23]/95 to-[#0B0C10]/95 border border-[#00D1B2]/40 rounded-3xl p-8 md:p-10 shadow-[0_20px_60px_rgba(0,0,0,0.9)] relative overflow-hidden text-center flex flex-col items-center gap-6 backdrop-blur-md">
-                {/* Subtle decorative glow */}
-                <div className="absolute -right-24 -top-24 w-48 h-48 bg-[#00D1B2]/10 rounded-full blur-[45px] pointer-events-none" />
-                
+              <div className="w-full max-w-2xl text-center flex flex-col items-center gap-6 py-10 backdrop-blur-sm">
+
+                {/* Badge */}
                 <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#00D1B2]/20 bg-[#00D1B2]/10 text-[#00D1B2] text-[10px] font-bold tracking-widest uppercase">
                   🔒 CONTENIDO EXCLUSIVO
                 </div>
-                
-                <h3 className="text-xl md:text-2xl font-black text-white uppercase tracking-tight max-w-md leading-tight">
-                  Tienes +${formattedHeroMensual} USD/mes atrapados.
-                </h3>
-                
-                <p className="text-zinc-400 text-xs md:text-sm font-semibold max-w-lg leading-relaxed text-left">
-                  El plan de rescate está aquí:<br /><br />
-                  👉 El Guardián te dice si es seguro seguir así.<br />
-                  👉 El Cazafugas te muestra dónde se escapa el dinero.<br />
-                  👉 El Estratega te da los pasos exactos — en orden.<br /><br />
-                  Completa los números de tus gastos para verlo todo desglosado.
-                </p>
 
-                {/* Buttons / Placeholder steps */}
+                {/* Dynamic headline */}
+                <h3 className="text-2xl md:text-3xl font-black text-white uppercase tracking-tight max-w-lg leading-tight">
+                  ENCONTRAMOS +${formattedHeroMensual} USD/MES ATRAPADOS.
+                </h3>
+
+                {/* Sub headline */}
+                <div className="flex flex-col gap-1">
+                  <p className="text-zinc-300 text-sm md:text-base font-semibold">La Auditoría EXPRESS te mostró el problema.</p>
+                  <p className="text-[#00D1B2] text-sm md:text-base font-bold">La Auditoría Operativa te da el plan exacto.</p>
+                </div>
+
+                {/* Icon rows */}
+                <div className="flex flex-col gap-5 w-full max-w-xs text-left">
+                  {([
+                    { img: '/assets/icon-guardian.webp', q: '¿es viable seguir así?' },
+                    { img: '/assets/icon-cazafugas.webp', q: '¿dónde exactamente se pierde?' },
+                    { img: '/assets/icon-estratega.webp', q: '¿qué mueves primero?' },
+                  ] as { img: string; q: string }[]).map(({ img, q }) => (
+                    <div key={q} className="flex items-center gap-4">
+                      <img src={img} alt="" style={{ width: 48, height: 48, objectFit: 'contain', flexShrink: 0 }} />
+                      <span className="text-zinc-200 text-sm font-semibold">{q}</span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* CTA + microcopy + share */}
                 <div className="flex flex-col items-center gap-3 w-full">
-                  <button 
+                  <button
                     type="button"
                     onClick={() => {
                       setShowPlaceholderForm(true);
@@ -3255,14 +3234,39 @@ function AuditoriaFormContent() {
                         document.getElementById('formulario-premium')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
                       }, 80);
                     }}
-                    className="w-full max-w-md bg-[#00D1B2] hover:bg-[#00D1B2]/90 text-[#0B0B0C] font-extrabold text-xs md:text-sm uppercase tracking-widest px-8 py-4 rounded-full shadow-lg transition-all duration-300 hover:scale-[1.02] font-sans"
+                    className="w-full max-w-md bg-[#00D1B2] hover:bg-[#00D1B2]/90 text-[#0B0B0C] font-extrabold text-xs md:text-sm uppercase tracking-widest px-8 py-4 rounded-full shadow-[0_0_30px_rgba(0,209,178,0.35)] transition-all duration-300 hover:scale-[1.02] font-sans"
                   >
-                    Ver mi desglose exacto
+                    VER MI DESGLOSE EXACTO →
                   </button>
-                  
-                  <span className="text-[9px] font-extrabold text-neutral-500 uppercase tracking-widest mt-1">
-                    Acceso instantáneo · Auditoría 100% personalizada
+
+                  <span className="text-[9px] font-extrabold text-neutral-500 uppercase tracking-widest">
+                    ACCESO INSTANTÁNEO · DIAGNÓSTICO 100% PERSONALIZADO
                   </span>
+
+                  {n8nReport?.id && (
+                    <div className="mt-3 flex flex-col items-center gap-2">
+                      <span className="text-zinc-500 text-xs">¿Quieres que otra persona sepa cómo está su BNB?</span>
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          const url = `${window.location.origin}/r/${n8nReport.id}`;
+                          try {
+                            if (navigator.share) {
+                              await navigator.share({ title: 'Mi Diagnóstico Express · AIRLOCAL', url });
+                            } else {
+                              await navigator.clipboard.writeText(url);
+                              setLinkCopied(true);
+                              setTimeout(() => setLinkCopied(false), 3000);
+                            }
+                          } catch {}
+                        }}
+                        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border border-[#00D1B2]/30 bg-[#00D1B2]/5 hover:bg-[#00D1B2]/15 text-[#00D1B2] text-xs font-bold uppercase tracking-wider transition-all duration-200"
+                      >
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+                        {linkCopied ? 'Enlace copiado ✓' : 'Compartir mi resultado'}
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -3629,7 +3633,7 @@ function AuditoriaFormContent() {
             )}
 
             {/* BUTTONS NAVIGATION */}
-            <div className="flex justify-between items-center pt-6 border-t border-white/5">
+            {currentStep > 0 && <div className="flex justify-between items-center pt-6 border-t border-white/5">
               {currentStep > 1 ? (
                 <button
                   type="button"
@@ -3668,7 +3672,7 @@ function AuditoriaFormContent() {
                   )}
                 </button>
               )}
-            </div>
+            </div>}
           </div>
         )}
       </div>
@@ -3897,6 +3901,17 @@ export default function AuditoriaTestPage() {
     <Suspense fallback={<LoadingSkeleton />}>
       <main className="min-h-screen bg-[#0B0B0C] text-[#eeeeee] font-sans selection:bg-[#00FFD1]/30 flex flex-col overflow-x-hidden">
         
+        <style>{`
+          input[data-touched="true"], select[data-touched="true"] {
+            border-color: #00D1B2 !important;
+            background-color: rgba(0,209,178,0.05) !important;
+            color: white !important;
+          }
+          input[data-touched="true"]:focus, select[data-touched="true"]:focus {
+            box-shadow: 0 0 0 1px #00D1B2 !important;
+          }
+        `}</style>
+
         {/* NAV */}
         <header style={{position:'sticky',top:0,zIndex:50,display:'flex',alignItems:'center',justifyContent:'space-between',padding:'20px 6vw',borderBottom:'1px solid #252b21',backdropFilter:'blur(6px)',background:'rgba(10,12,10,0.85)'} as React.CSSProperties}>
           <Link href="/" style={{display:'flex',alignItems:'center',gap:10,textDecoration:'none'}}>
