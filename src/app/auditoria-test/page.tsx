@@ -268,7 +268,7 @@ function AuditoriaFormContent() {
       const params = new URLSearchParams(window.location.search);
       if (params.get('status') || params.get('report_id')) return 4;
     }
-    return 1;
+    return 0;
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
@@ -282,6 +282,7 @@ function AuditoriaFormContent() {
   const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false);
   const [accessCode, setAccessCode] = useState('');
   const [checkoutError, setCheckoutError] = useState('');
+  const [linkCopied, setLinkCopied] = useState(false);
 
   interface FormDataState {
     property_name: string;
@@ -1888,11 +1889,46 @@ function AuditoriaFormContent() {
   return (
     <div className={`w-full mx-auto mb-12 ${currentStep === 4 ? 'max-w-none' : 'max-w-[800px]'}`}>
       
+      {/* STEP 0 — Pantalla de bienvenida / puente */}
+      {currentStep === 0 && (
+        <div className="flex flex-col items-center justify-center text-center min-h-[60vh] animate-in fade-in slide-in-from-bottom-4 duration-700 max-w-[680px] mx-auto">
+          <div className="inline-block px-3 py-1.5 rounded-full border border-[#00D1B2]/20 bg-[#00D1B2]/10 text-[#00D1B2] text-[10px] md:text-xs font-bold tracking-widest uppercase mb-8 shadow-[0_0_15px_rgba(0,209,178,0.1)]">
+            DIAGNÓSTICO EXPRESS · GRATIS
+          </div>
+          <h1 className="text-3xl md:text-5xl font-bold tracking-tight text-white mb-6 leading-tight">
+            Descubre si tu BNB realmente genera ganancias.
+          </h1>
+          <p className="text-base md:text-lg text-zinc-400 max-w-lg mx-auto leading-relaxed mb-10">
+            Responde unas preguntas sobre tu operación y en 90 segundos verás exactamente dónde está tu dinero — y cuánto podrías estar dejando sobre la mesa.
+          </p>
+          <div className="flex flex-col gap-3 mb-10 text-left w-full max-w-sm mx-auto">
+            {[
+              { icon: '🔍', text: 'Detecta si tu operación es saludable, vulnerable o crítica' },
+              { icon: '📊', text: 'Analiza tus métricas frente al benchmark del mercado' },
+              { icon: '🎯', text: 'Prioriza la intervención con mayor impacto económico' },
+            ].map(({ icon, text }) => (
+              <div key={text} className="flex items-start gap-3 text-zinc-300 text-sm">
+                <span className="text-base leading-none mt-0.5">{icon}</span>
+                <span>{text}</span>
+              </div>
+            ))}
+          </div>
+          <button
+            onClick={() => setCurrentStep(1)}
+            className="inline-flex items-center gap-3 bg-[#00D1B2] hover:bg-[#00bfa3] text-[#0B0B0C] font-bold text-base px-8 py-4 rounded-full transition-all duration-300 hover:scale-105 shadow-[0_0_40px_rgba(0,209,178,0.3)]"
+          >
+            Empezar diagnóstico
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </button>
+          <p className="text-zinc-600 text-xs mt-5">Sin registro · Sin tarjeta · 90 segundos</p>
+        </div>
+      )}
+
       {/* 2. HERO SUPERIOR (Dinámico para pasos 1-3) */}
-      {currentStep <= 3 && (
+      {currentStep >= 1 && currentStep <= 3 && (
         <div className="text-center mb-10 w-full animate-in fade-in slide-in-from-bottom-4 duration-700">
           <div className="inline-block px-3 py-1.5 rounded-full border border-[#00D1B2]/20 bg-[#00D1B2]/10 text-[#00D1B2] text-[10px] md:text-xs font-bold tracking-widest uppercase mb-6 shadow-[0_0_15px_rgba(0,209,178,0.1)] animate-pulse">
-            AUDITORÍA OPERATIVA COMPLETA
+            DIAGNÓSTICO EXPRESS
           </div>
           <h1 className="text-3xl md:text-5xl font-bold tracking-tight text-white mb-6 leading-tight max-w-2xl mx-auto">
             {currentStep === 1 && "Mientras no tengas claridad, tu operación es una apuesta."}
@@ -1908,7 +1944,7 @@ function AuditoriaFormContent() {
       )}
       
       {/* BARRA DE PROGRESO PREMIUM (Solo visible en pasos de llenado 1-3) */}
-      {currentStep <= 3 && (
+      {currentStep >= 1 && currentStep <= 3 && (
         <div className="mb-10 px-4">
           <div className="flex justify-between items-center relative">
             {/* Línea de fondo */}
@@ -1994,7 +2030,41 @@ function AuditoriaFormContent() {
           </div>
         ) : (
         <div className="space-y-8 animate-in fade-in zoom-in-95 duration-500 text-left w-full">
-            
+
+            {/* SHARE BUTTON */}
+            {n8nReport?.id && (
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const url = `${window.location.origin}/r/${n8nReport.id}`;
+                    try {
+                      if (navigator.share) {
+                        await navigator.share({ title: 'Mi Diagnóstico Express · AIRLOCAL', url });
+                      } else {
+                        await navigator.clipboard.writeText(url);
+                        setLinkCopied(true);
+                        setTimeout(() => setLinkCopied(false), 3000);
+                      }
+                    } catch {}
+                  }}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-white/10 bg-white/5 hover:bg-white/10 text-zinc-400 hover:text-white text-xs font-bold uppercase tracking-wider transition-all duration-200"
+                >
+                  {linkCopied ? (
+                    <>
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                      Enlace copiado
+                    </>
+                  ) : (
+                    <>
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+                      Compartir diagnóstico
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
+
             {/* CABECERA DE RESUMEN INICIAL */}
             <div className="w-full bg-gradient-to-b from-[#1A1D23] to-[#0B0C10] border border-[#2E333C]/40 rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] p-8 mb-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 transition-all hover:border-zinc-700/50">
               <div className="flex flex-col gap-1">

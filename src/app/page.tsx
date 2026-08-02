@@ -324,6 +324,8 @@ h1 .fade{ color:var(--muted-2); }
 }
 .cta-primary:hover{ transform:translateY(-2px) scale(1.02); box-shadow:0 0 60px rgba(52,245,197,0.4); }
 .trust-line{ margin-top:18px; font-size:12.5px; color:var(--muted-2); letter-spacing:0.02em; }
+.privacy-hint{ display:inline-flex; align-items:center; gap:6px; margin-top:10px; font-size:11.5px; color:var(--muted-2); opacity:0.75; }
+.privacy-hint svg{ flex:none; }
 
 @keyframes drift{
   0%,100%{ transform:translateY(0px) rotate(0deg); }
@@ -590,7 +592,7 @@ export default function Home() {
             <span className="brand-sub">Inteligencia operativa | BNB</span>
           </div>
         </div>
-        <a className="nav-cta" href="/auditoria-test">Auditar mi operación</a>
+        <a className="nav-cta" href="/auditoria-test">Descubrir mi operación</a>
       </nav>
 
       <section className="hero">
@@ -612,6 +614,10 @@ export default function Home() {
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
         </a>
         <div className="trust-line">Sin instalación · Sin compromiso · 90 segundos</div>
+        <div className="privacy-hint">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          Tus datos no se comparten con terceros
+        </div>
 
         <div className="stat-pill">
           <div className="stat-cell"><div className="stat-num mono" data-count="90" data-suffix="s">0</div><div className="stat-label">y lo tienes</div></div>
@@ -620,7 +626,7 @@ export default function Home() {
           <span className="stat-divider"></span>
           <div className="stat-cell"><div className="stat-num mono" data-count="1" data-suffix="">0</div><div className="stat-label">Plan de acción</div></div>
           <span className="stat-divider"></span>
-          <div className="stat-cell"><div className="stat-num mono">∞</div><div className="stat-label">Decisiones mejores</div></div>
+          <div className="stat-cell"><div className="stat-num mono">+12</div><div className="stat-label">métricas analizadas</div></div>
         </div>
       </section>
 
@@ -670,9 +676,9 @@ export default function Home() {
 
       <section className="section">
         <div className="section-head reveal">
-          <div className="section-eyebrow">Comienza con la Auditoría</div>
+          <div className="section-eyebrow">Comienza con tu Diagnóstico Express</div>
           <h2 className="display">Toda operación tiene un estado. Descubre cuál es el de la tuya.</h2>
-          <p>Este es el tipo de diagnóstico personalizado que recibirás al completar tu Auditoría EXPRESS.</p>
+          <p>Este es el tipo de diagnóstico personalizado que recibirás al completar tu Diagnóstico Express.</p>
         </div>
 
         <div className="state-switch reveal">
@@ -775,7 +781,7 @@ export default function Home() {
 
           <div className="cta-wrap">
             <a className="locked-cta" href="/auditoria-test">Descubrir dónde se pierde el dinero</a>
-            <div className="locked-micro">Acceso instantáneo · Auditoría 100% personalizada</div>
+            <div className="locked-micro">Acceso instantáneo · Diagnóstico 100% personalizado</div>
           </div>
         </div>
       </section>
@@ -814,7 +820,7 @@ export default function Home() {
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="0.8" fill="currentColor"/></svg>
             </div>
             <div>
-              <h4>Auditoría 100% tuya</h4>
+              <h4>Diagnóstico 100% tuyo</h4>
               <p>Cada resultado se calcula con tus números — no con promedios genéricos del mercado.</p>
             </div>
           </div>
