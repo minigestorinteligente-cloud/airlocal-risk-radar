@@ -3695,7 +3695,7 @@ function AuditoriaFormContent() {
         )}
       </div>
       ) : null
-    )}
+    }
       {/* MODAL BETA DE TALLY / CAPTURA DE CORREO */}
       {isBetaModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-300">
