@@ -3918,8 +3918,54 @@ function AuditoriaFormContent() {
 export default function AuditoriaTestPage() {
   return (
     <Suspense fallback={<LoadingSkeleton />}>
+      <style>{`
+        .al-bg-layer{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;}
+        .al-bg-grid{
+          position:absolute;inset:-10%;
+          background-image:linear-gradient(rgba(37,43,33,0.6) 1px,transparent 1px),linear-gradient(90deg,rgba(37,43,33,0.6) 1px,transparent 1px);
+          background-size:64px 64px;opacity:0.18;
+          mask-image:radial-gradient(ellipse 70% 60% at 50% 20%,black 40%,transparent 85%);
+        }
+        .al-bg-radar{
+          position:absolute;top:-320px;left:50%;transform:translateX(-50%);
+          width:1100px;height:1100px;border-radius:50%;
+          border:1px solid rgba(37,43,33,0.9);opacity:0.55;
+        }
+        .al-bg-radar::before,.al-bg-radar::after{
+          content:'';position:absolute;border-radius:50%;border:1px solid rgba(37,43,33,0.9);
+        }
+        .al-bg-radar::before{inset:140px;}
+        .al-bg-radar::after{inset:280px;}
+        .al-bg-sweep{
+          position:absolute;top:-320px;left:50%;width:1100px;height:1100px;
+          transform-origin:50% 50%;
+          background:conic-gradient(from 0deg,rgba(52,245,197,0.18),transparent 22%);
+          border-radius:50%;transform:translateX(-50%);
+          animation:al-sweep 7s linear infinite;mix-blend-mode:screen;
+        }
+        @keyframes al-sweep{to{transform:translateX(-50%) rotate(360deg);}}
+        .al-bg-map{
+          position:absolute;inset:0;background-size:cover;background-position:center;
+          opacity:0.4;filter:saturate(0.9) contrast(1.05);
+          mask-image:radial-gradient(ellipse 75% 65% at 50% 35%,black 30%,transparent 88%);
+          -webkit-mask-image:radial-gradient(ellipse 75% 65% at 50% 35%,black 30%,transparent 88%);
+        }
+        .al-bg-map-scrim{
+          position:absolute;inset:0;
+          background:radial-gradient(ellipse 60% 55% at 50% 32%,rgba(11,11,12,0.82) 0%,rgba(11,11,12,0.45) 55%,rgba(11,11,12,0.05) 100%);
+        }
+      `}</style>
       <main className="min-h-screen bg-[#0B0B0C] text-[#eeeeee] font-sans selection:bg-[#00FFD1]/30 flex flex-col overflow-x-hidden">
-        
+
+        {/* FONDO: mapa satélite + grid + radar + sweep — idéntico a la landing */}
+        <div className="al-bg-layer">
+          <div className="al-bg-map" style={{backgroundImage:"url('/assets/hero-map-bg.webp')"}}></div>
+          <div className="al-bg-map-scrim"></div>
+          <div className="al-bg-grid"></div>
+          <div className="al-bg-radar"></div>
+          <div className="al-bg-sweep"></div>
+        </div>
+
         {/* NAV */}
         <header style={{position:'sticky',top:0,zIndex:50,display:'flex',alignItems:'center',justifyContent:'space-between',padding:'20px 6vw',borderBottom:'1px solid #252b21',backdropFilter:'blur(6px)',background:'rgba(10,12,10,0.85)'} as React.CSSProperties}>
           <Link href="/" style={{display:'flex',alignItems:'center',gap:10,textDecoration:'none'}}>
@@ -3933,7 +3979,7 @@ export default function AuditoriaTestPage() {
         </header>
 
         {/* Outer content container */}
-        <div className="flex-1 w-full max-w-[1440px] mx-auto flex flex-col pt-16 md:pt-24 pb-12 px-4 sm:px-8 lg:px-12">
+        <div className="flex-1 w-full max-w-[1440px] mx-auto flex flex-col pt-16 md:pt-24 pb-12 px-4 sm:px-8 lg:px-12" style={{position:'relative',zIndex:1}}>
           
           {/* 3. MULTI-STEP NATIVE FORM COMPONENT */}
           <AuditoriaFormContent />
