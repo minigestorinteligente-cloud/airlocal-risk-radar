@@ -3827,17 +3827,16 @@ export default function AuditoriaTestPage() {
     <Suspense fallback={<LoadingSkeleton />}>
       <main className="min-h-screen bg-[#0B0B0C] text-[#eeeeee] font-sans selection:bg-[#00FFD1]/30 flex flex-col overflow-x-hidden">
         
-        {/* 1. NAV — igual al de /quick-result */}
-        <header className="w-full py-5 px-6 md:px-12 flex items-center justify-between border-b border-white/5 bg-[#0B0B0C]/80 backdrop-blur-md sticky top-0 z-50">
-          <Link href="/" className="flex items-center gap-3 transition-opacity hover:opacity-80">
-            <div className="w-8 h-8 rounded-full bg-[#00FFD1] text-[#0B0B0C] flex items-center justify-center font-black text-sm shadow-[0_0_15px_rgba(0,255,209,0.3)]">A</div>
-            <div className="font-bold tracking-widest text-white uppercase text-[11px] md:text-xs flex items-center">
-              AIRLOCAL <span className="text-[#39a698] font-bold border-l border-white/10 pl-2 ml-2 md:pl-3 md:ml-3">RISK RADAR</span>
+        {/* NAV */}
+        <header style={{position:'sticky',top:0,zIndex:50,display:'flex',alignItems:'center',justifyContent:'space-between',padding:'20px 6vw',borderBottom:'1px solid #252b21',backdropFilter:'blur(6px)',background:'rgba(10,12,10,0.85)'} as React.CSSProperties}>
+          <Link href="/" style={{display:'flex',alignItems:'center',gap:10,textDecoration:'none'}}>
+            <img src="/assets/logo-mark.webp" alt="AIRLOCAL" style={{height:36,width:'auto',display:'block',filter:'drop-shadow(0 0 8px rgba(52,245,197,0.35))'}} />
+            <div style={{display:'flex',flexDirection:'column',lineHeight:1.2}}>
+              <span style={{fontFamily:'Montserrat,sans-serif',fontWeight:800,fontSize:14,letterSpacing:'0.03em',color:'#f3f5ef'}}>AIRLOCAL</span>
+              <span style={{fontSize:10.5,color:'#98a190',letterSpacing:'0.03em'}}>Inteligencia operativa | BNB</span>
             </div>
           </Link>
-          <span className="text-zinc-500 text-xs font-bold uppercase tracking-widest select-none">
-            propiqdata.com
-          </span>
+          <Link href="/" style={{fontFamily:'Inter,sans-serif',fontWeight:600,fontSize:13,color:'#98a190',textDecoration:'none',letterSpacing:'0.02em'}}>← Inicio</Link>
         </header>
 
         {/* Outer content container */}
@@ -3848,10 +3847,22 @@ export default function AuditoriaTestPage() {
 
         </div>
 
-        {/* 4. FOOTER — igual al resto del sitio */}
-        <footer className="w-full text-center text-[10px] md:text-xs text-zinc-600 mt-auto py-8 border-t border-white/5 bg-[#0B0B0C] flex flex-col gap-1 tracking-wide">
-          <p className="font-bold">AIRLOCAL™ Risk Radar · by propiqdata.com</p>
-          <p>soporte@propiqdata.com · Términos · Privacidad</p>
+        {/* FOOTER */}
+        <footer style={{position:'relative',zIndex:5,padding:'40px 6vw 30px',borderTop:'1px solid #252b21',background:'#0d100d'}}>
+          <div style={{maxWidth:1100,margin:'0 auto',display:'flex',justifyContent:'space-between',alignItems:'center',flexWrap:'wrap',gap:18}}>
+            <div style={{display:'flex',alignItems:'center',gap:12}}>
+              <img src="/assets/logo-mark.webp" alt="AIRLOCAL" style={{height:26,width:'auto',display:'block',filter:'drop-shadow(0 0 8px rgba(52,245,197,0.35))'}} />
+              <span style={{fontSize:12.5,color:'#98a190'}}>AIRLOCAL™ by propiqdata.com</span>
+            </div>
+            <div style={{display:'flex',gap:22,fontSize:12.5}}>
+              <a href="#" style={{color:'#98a190',textDecoration:'none'}}>Términos</a>
+              <a href="#" style={{color:'#98a190',textDecoration:'none'}}>Privacidad</a>
+              <a href="mailto:soporte@propiqdata.com" style={{color:'#98a190',textDecoration:'none'}}>soporte@propiqdata.com</a>
+            </div>
+          </div>
+          <div style={{maxWidth:1100,margin:'22px auto 0',paddingTop:18,borderTop:'1px solid #252b21',fontSize:11.5,color:'#666f60',textAlign:'center'}}>
+            © 2026 AIRLOCAL
+          </div>
         </footer>
       </main>
     </Suspense>

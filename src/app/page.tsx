@@ -252,6 +252,18 @@ body{
 }
 @keyframes sweep{ to{ transform:translateX(-50%) rotate(360deg);} }
 
+.bg-map{
+  position:absolute; inset:0;
+  background-size:cover; background-position:center;
+  opacity:0.4; filter:saturate(0.9) contrast(1.05);
+  mask-image:radial-gradient(ellipse 75% 65% at 50% 35%, black 30%, transparent 88%);
+  -webkit-mask-image:radial-gradient(ellipse 75% 65% at 50% 35%, black 30%, transparent 88%);
+}
+.bg-map-scrim{
+  position:absolute; inset:0;
+  background:radial-gradient(ellipse 60% 55% at 50% 32%, rgba(10,12,10,0.78) 0%, rgba(10,12,10,0.42) 55%, rgba(10,12,10,0.05) 100%);
+}
+
 nav{
   position:relative; z-index:10;
   display:flex; align-items:center; justify-content:space-between;
@@ -260,8 +272,9 @@ nav{
   backdrop-filter:blur(6px);
 }
 .brand{display:flex; align-items:center; gap:10px;}
-.brand-text{display:flex; flex-direction:column; line-height:1.1; justify-content:center;}
-.brand-text span{font-size:11px; color:var(--muted); letter-spacing:0.04em;}
+.brand-text{display:flex; flex-direction:column; line-height:1.2; justify-content:center;}
+.brand-text .brand-name{font-family:'Montserrat',sans-serif; font-weight:800; font-size:14px; letter-spacing:0.03em; color:var(--text);}
+.brand-text .brand-sub{font-size:10.5px; color:var(--muted); letter-spacing:0.03em;}
 .nav-cta{
   font-family:'Inter',sans-serif; font-weight:600; font-size:14px;
   color:#0a0c0a; background:var(--lima);
@@ -410,7 +423,7 @@ h1 .fade{ color:var(--muted-2); }
 .site-footer{ position:relative; z-index:5; padding:40px 6vw 30px; border-top:1px solid var(--border); }
 .footer-inner{ max-width:1100px; margin:0 auto; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:18px; }
 .footer-brand{ display:flex; align-items:center; gap:12px; }
-.footer-brand .brand-logo{ height:30px; }
+.footer-brand .brand-mark-img{ height:26px; }
 .footer-tagline{ font-size:12.5px; color:var(--muted); }
 .footer-links{ display:flex; gap:22px; font-size:12.5px; }
 .footer-links a{ color:var(--muted); text-decoration:none; }
@@ -562,6 +575,8 @@ export default function Home() {
       <style dangerouslySetInnerHTML={{ __html: CSS }} />
 
       <div className="bg-layer">
+        <div className="bg-map" style={{backgroundImage:"url('/assets/hero-map-bg.webp')"}}></div>
+        <div className="bg-map-scrim"></div>
         <div className="bg-grid"></div>
         <div className="bg-radar"></div>
         <div className="bg-sweep"></div>
@@ -569,9 +584,10 @@ export default function Home() {
 
       <nav>
         <div className="brand">
-          <img className="brand-logo" src="/assets/logo.webp" alt="AIRLOCAL" />
+          <img className="brand-mark-img" src="/assets/logo-mark.webp" alt="AIRLOCAL" />
           <div className="brand-text">
-            <span>Risk Radar · Inteligencia BNB</span>
+            <span className="brand-name">AIRLOCAL</span>
+            <span className="brand-sub">Inteligencia operativa | BNB</span>
           </div>
         </div>
         <a className="nav-cta" href="/auditoria-test">Auditar mi operación</a>
@@ -855,8 +871,8 @@ export default function Home() {
       <footer className="site-footer">
         <div className="footer-inner">
           <div className="footer-brand">
-            <img className="brand-logo" src="/assets/logo.webp" alt="AIRLOCAL" />
-            <div className="footer-tagline">AIRLOCAL™ Risk Radar · by propiqdata.com</div>
+            <img className="brand-mark-img" src="/assets/logo-mark.webp" alt="AIRLOCAL" />
+            <div className="footer-tagline">AIRLOCAL™ by propiqdata.com</div>
           </div>
           <div className="footer-links">
             <a href="#">Términos</a>
