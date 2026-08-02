@@ -412,8 +412,7 @@ h1 .fade{ color:var(--muted-2); }
 .consequence-row p{ font-size:14px; color:var(--text); line-height:1.55; }
 @media (max-width:820px){ .founder-grid{ grid-template-columns:1fr; gap:40px; } }
 
-.final-cta{ position:relative; padding:11vw 6vw; text-align:center; overflow:hidden; border-top:1px solid var(--border); background:var(--bg-2); }
-.final-bg{ position:absolute; inset:0; opacity:0.7; }
+.final-cta{ position:relative; padding:11vw 6vw; text-align:center; overflow:hidden; border-top:1px solid var(--border); background:transparent; }
 .final-cta-inner{ position:relative; z-index:2; max-width:640px; margin:0 auto; }
 .final-cta-inner h2{ font-size:clamp(1.8rem,3.4vw,2.6rem); line-height:1.15; margin-bottom:20px; }
 .final-sub{ color:var(--muted); font-size:1.05rem; line-height:1.6; margin-bottom:34px; }
@@ -422,6 +421,7 @@ h1 .fade{ color:var(--muted-2); }
 
 .site-footer{ position:relative; z-index:5; padding:40px 6vw 30px; border-top:1px solid var(--border); }
 .footer-inner{ max-width:1100px; margin:0 auto; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:18px; }
+.brand-mark-img{ height:28px; width:auto; display:block; filter:drop-shadow(0 0 8px rgba(52,245,197,0.35)); }
 .footer-brand{ display:flex; align-items:center; gap:12px; }
 .footer-brand .brand-mark-img{ height:26px; }
 .footer-tagline{ font-size:12.5px; color:var(--muted); }
@@ -853,10 +853,6 @@ export default function Home() {
       </section>
 
       <section className="final-cta">
-        <div className="bg-layer final-bg">
-          <div className="bg-grid"></div>
-          <div className="bg-radar"></div>
-        </div>
         <div className="final-cta-inner reveal">
           <h2 className="display">Comprueba si existe un problema real en tu operación.</h2>
           <p className="final-sub">No prometemos ahorrarte dinero. <b>Prometemos mostrarte la verdad operativa.</b><br />Una vez la veas, el siguiente paso se hace solo evidente.</p>
