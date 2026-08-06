@@ -8,7 +8,7 @@ import { createClient } from '@supabase/supabase-js';
 import { Manrope, Inter } from 'next/font/google';
 import AnimatedNumber from '../../components/AnimatedNumber';
 import { HealthGauge } from "./health-gauge";
-import { LeakRadar } from "./leak-radar";
+import { LeakRadar, LeakDonut, LeakBars } from "./leak-radar";
 import { SurvivalFormula } from "./survival-formula";
 import { AgentSectionHeader } from "../../components/AgentSectionHeader";
 
@@ -274,12 +274,19 @@ function AuditoriaFormContent() {
   const [errorMessage, setErrorMessage] = useState('');
   const [n8nReport, setN8nReport] = useState<any>(null);
   const [isFetchingReport, setIsFetchingReport] = useState(false);
+
+  // Comunica el paso actual al body para que el CSS pueda mostrar/ocultar el sweep
+  useEffect(() => {
+    document.body.setAttribute('data-auditoria-step', String(currentStep));
+    return () => { document.body.removeAttribute('data-auditoria-step'); };
+  }, [currentStep]);
   const [betaEmail, setBetaEmail] = useState('');
   const [isBetaSubmitted, setIsBetaSubmitted] = useState(false);
   const [isBetaModalOpen, setIsBetaModalOpen] = useState(false);
   const [isUnlocked, setIsUnlocked] = useState(false);
   const [showPlaceholderForm, setShowPlaceholderForm] = useState(false);
   const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false);
+  const [validationMsg, setValidationMsg] = useState('');
   const [accessCode, setAccessCode] = useState('');
   const [checkoutError, setCheckoutError] = useState('');
   const [linkCopied, setLinkCopied] = useState(false);
@@ -317,20 +324,20 @@ function AuditoriaFormContent() {
     city: '',
     property_type: 'Apartamento',
     market_type: '',
-    Max_guest: 2,
-    max_guests: 2,
-    bedrooms: 1,
-    bathrooms: 1,
-    occupied_nights: 17,
-    available_nights: 30,
-    gross_income: 3000,
-    platfom_commission: 450,
-    cleaning_cost: 300,
-    services_cost: 200,
-    maintenence_cost: 150,
-    tax_cost: 250,
-    Hidden_cost: 50,
-    approximate_expenses: 1400,
+    Max_guest: '',
+    max_guests: '',
+    bedrooms: '',
+    bathrooms: '',
+    occupied_nights: 0,
+    available_nights: 0,
+    gross_income: '',
+    platfom_commission: '',
+    cleaning_cost: '',
+    services_cost: '',
+    maintenence_cost: '',
+    tax_cost: '',
+    Hidden_cost: '',
+    approximate_expenses: '',
     competitive_adr: '',
     stability_perception: 'Se mantuvieron',
     risk_perception: 'Totalmente bajo control',
@@ -372,6 +379,49 @@ function AuditoriaFormContent() {
 
   }, [searchParams]);
 
+  // CARGA DE REPORTE COMPARTIDO — cuando viene de /r/[id] con ?shared_id=<uuid>
+  useEffect(() => {
+    const sharedId = searchParams.get('shared_id');
+    if (!sharedId || !supabaseClient) return;
+
+    setCurrentStep(4);
+    setIsFetchingReport(true);
+
+    supabaseClient
+      .from('reports')
+      .select('*')
+      .eq('id', sharedId)
+      .single()
+      .then(({ data, error }: { data: any; error: any }) => {
+        if (data && !error) {
+          let parsedObj = { ...data };
+          try {
+            if (parsedObj.report_data) {
+              let raw = parsedObj.report_data;
+              if (typeof raw === 'string') raw = JSON.parse(raw);
+              if (typeof raw === 'string') raw = JSON.parse(raw);
+              if (raw && raw.report_data && !raw.free) raw = raw.report_data;
+              parsedObj.report_data = raw;
+            }
+          } catch (e) { /* already parsed */ }
+
+          setN8nReport(parsedObj);
+          setShowPlaceholderForm(true);
+
+          // Pre-fill only the non-sensitive fields from the report
+          const rd = parsedObj.report_data || {};
+          const summary = rd.free?.user_summary || {};
+          const metrics = rd.free?.metrics || {};
+          setFormData(prev => ({
+            ...prev,
+            property_name: summary.property_name || prev.property_name,
+            gross_income: summary.gross_income || metrics.gross_income || prev.gross_income,
+          }));
+        }
+        setIsFetchingReport(false);
+      });
+  }, [searchParams]);
+
   // MANEJO DE CAMBIOS E INTERACCIONES EN INPUTS (Limpieza de 0 inicial y soporte de strings vacíos)
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
@@ -405,15 +455,52 @@ function AuditoriaFormContent() {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
+  const showValidation = (msg: string) => {
+    setValidationMsg(msg);
+  };
+
   const nextStep = () => {
-    // Validaciones básicas antes de cambiar de paso
     if (currentStep === 1) {
       if (!formData.property_name.trim()) {
-        alert('Por favor, ingresa el nombre de la propiedad.');
+        showValidation('Ingresa el nombre de tu propiedad para continuar.');
         return;
       }
       if (!formData.market_type) {
-        alert('Por favor, selecciona el tipo de mercado.');
+        showValidation('Selecciona el tipo de mercado (Urbano o Vacacional).');
+        return;
+      }
+      if (!String(formData.max_guests).trim() || Number(formData.max_guests) < 1) {
+        showValidation('Indica cuántos huéspedes máximo admite tu propiedad.');
+        return;
+      }
+      if (!String(formData.bedrooms).trim() || Number(formData.bedrooms) < 1) {
+        showValidation('Indica cuántas habitaciones tiene tu propiedad.');
+        return;
+      }
+      if (!String(formData.bathrooms).trim() || Number(formData.bathrooms) < 1) {
+        showValidation('Indica cuántos baños tiene tu propiedad.');
+        return;
+      }
+    }
+    if (currentStep === 2) {
+      if (!String(formData.gross_income).trim() || Number(formData.gross_income) <= 0) {
+        showValidation('Ingresa el ingreso mensual estimado de tu propiedad.');
+        return;
+      }
+      if (!String(formData.approximate_expenses).trim() || Number(formData.approximate_expenses) < 0) {
+        showValidation('Ingresa los gastos operativos aproximados de tu propiedad.');
+        return;
+      }
+      if (Number(formData.occupied_nights) <= 0) {
+        showValidation('Indica cuántas noches estuvo ocupada tu propiedad el último mes.');
+        return;
+      }
+      if (Number(formData.available_nights) <= 0) {
+        showValidation('Indica cuántas noches estuvo disponible tu propiedad.');
+        return;
+      }
+      if (Number(formData.occupied_nights) > Number(formData.available_nights)) {
+        showValidation('Las noches ocupadas no pueden superar las noches disponibles.');
         return;
       }
     }
@@ -425,6 +512,19 @@ function AuditoriaFormContent() {
   };
 
   const handleOpenCheckout = () => {
+    const costs = [
+      { val: formData.platfom_commission, label: 'Comisión OTA / Plataformas' },
+      { val: formData.cleaning_cost,       label: 'Limpieza Total' },
+      { val: formData.services_cost,       label: 'Servicios Básicos / Gas / Luz' },
+      { val: formData.maintenence_cost,    label: 'Mantenimiento / Reparaciones' },
+      { val: formData.tax_cost,            label: 'Impuestos y Licencias' },
+      { val: formData.Hidden_cost,         label: 'Otros Gastos Ocultos' },
+    ];
+    const missing = costs.find(c => String(c.val).trim() === '');
+    if (missing) {
+      showValidation(`Completa el campo "${missing.label}" para desbloquear el análisis completo.`);
+      return;
+    }
     setIsCheckoutModalOpen(true);
     setAccessCode('');
     setCheckoutError('');
@@ -653,11 +753,20 @@ function AuditoriaFormContent() {
       return;
     }
 
+    const emailTrimmed = formData.email.trim();
+    if (!emailTrimmed) {
+      showValidation('Ingresa tu correo electrónico para recibir el diagnóstico.');
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(emailTrimmed)) {
+      showValidation('El correo ingresado no parece válido. Revisa el formato (ej. tu@email.com).');
+      return;
+    }
+
     setIsSubmitting(true);
     setErrorMessage('');
 
-    // Sanitizar email usando el fallback si fuera necesario para pruebas
-    const finalEmail = formData.email.trim() || 'malenasoloads@gmail.com';
+    const finalEmail = emailTrimmed;
 
     // Construcción del Payload Plano unificado y estricto
     const payload: Record<string, any> = {
@@ -763,12 +872,16 @@ function AuditoriaFormContent() {
               ? 'VULNERABLE'
               : 'SALUDABLE';
           const profitVal = rd?.free?.metrics?.net_income ?? null;
-          const potencialVal = rd?.free?.hero_mensual ?? null;
+          const leaksTotalSB = Number(rd?.leak_analysis?.total_recoverable_monthly ?? 0);
+          const ppSB = rd?.posicionamiento_precio;
+          const pricingBonusSB = (ppSB?.disponible && ppSB?.estado === 'BAJO_MERCADO') ? Number(ppSB?.potencial_mensual || 0) : 0;
+          const potencialVal = (leaksTotalSB + pricingBonusSB) > 0 ? (leaksTotalSB + pricingBonusSB) : (rd?.free?.hero_mensual ?? null);
           supabaseClient.from('reports').update({
             riesgo: riesgoVal,
             profit: profitVal,
             perdida_potencial: potencialVal,
-          }).eq('id', fetchedData.id).then(() => {});
+            status: 'analyzed',
+          }).eq('id', fetchedData.id).neq('status', 'confirmed').then(() => {});
         }
       }
       
@@ -1697,54 +1810,109 @@ function AuditoriaFormContent() {
       return isNaN(num) ? 0 : num;
     })();
 
-    const cleanAmt = cleanFormatAmount(lane.impacto_mensual);
-
     return (
-      <div className="bg-gradient-to-b from-[#1A1D23] to-[#0B0C10] border border-[#2E333C]/40 rounded-3xl p-8 transition-all hover:border-white/10 flex flex-col justify-between h-full w-full shadow-[0_20px_50px_rgba(0,0,0,0.5)] text-left">
-        <div>
-          {numericMonthly > 0 ? (
-            /* KPI Gigante Protagónico arriba */
-            <div className="text-5xl md:text-6xl font-black text-white leading-none tracking-tight mb-4">
-              {cleanAmt.value}
-              <span className="text-lg md:text-xl font-bold text-neutral-500 font-sans tracking-normal ml-1.5">
-                USD / mes
+      <div className="border border-[#161B26] bg-[#0E1218]/60 rounded-3xl p-8 flex flex-col justify-between h-full w-full shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
+        <div className="flex flex-col justify-between h-full gap-6">
+          <div>
+            {lane.prioridad && (
+              <span className="text-[11px] tracking-widest text-[#00D1B2] font-bold uppercase mb-4 block">
+                — {lane.prioridad}
               </span>
+            )}
+            <h3 className="text-2xl font-black text-white tracking-tight mb-4 uppercase text-left">
+              {lane.categoria}
+            </h3>
+
+            <div className="flex flex-col gap-4 text-left">
+              {lane.que_intervenir && (
+                <div className="flex flex-col gap-1">
+                  <span className="text-[9px] text-zinc-500 font-extrabold uppercase tracking-wider">
+                    Qué intervenir
+                  </span>
+                  <p className="text-xs text-neutral-400 leading-relaxed font-semibold">
+                    {lane.que_intervenir}
+                  </p>
+                </div>
+              )}
+
+              {lane.metrica && (
+                <div className="flex flex-col gap-1">
+                  <span className="text-[9px] text-zinc-500 font-extrabold uppercase tracking-wider">
+                    Métrica
+                  </span>
+                  <p className="text-xs text-neutral-400 leading-relaxed font-semibold">
+                    {lane.metrica}
+                  </p>
+                </div>
+              )}
+
+              {lane.what_if && (
+                <div className="flex flex-col gap-1">
+                  <span className="text-[9px] text-zinc-500 font-extrabold uppercase tracking-wider">
+                    Escenario What If
+                  </span>
+                  <p className="text-xs text-neutral-400 leading-relaxed font-semibold italic">
+                    "{lane.what_if}"
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {numericMonthly > 0 ? (
+            <div className="mt-auto pt-6 border-t border-white/[0.03] flex flex-col gap-4 text-left">
+              <div className="flex flex-wrap gap-x-8 gap-y-3">
+                {lane.impacto_mensual !== undefined && (
+                  <div className="flex flex-col">
+                    <span className="text-[10px] text-zinc-500 font-extrabold uppercase tracking-wider mb-1">
+                      Impacto Mensual
+                    </span>
+                    <div className="flex items-baseline gap-1.5">
+                      <span className="text-3xl font-black text-[#00D1B2] tracking-tight">
+                        {typeof lane.impacto_mensual === 'number'
+                          ? `+$${lane.impacto_mensual.toLocaleString()}`
+                          : lane.impacto_mensual}
+                      </span>
+                      <span className="text-xs font-bold text-white uppercase tracking-wider">
+                        USD/mes
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                {lane.impacto_anual !== undefined && (
+                  <div className="flex flex-col">
+                    <span className="text-[10px] text-zinc-500 font-extrabold uppercase tracking-wider mb-1">
+                      Impacto Anual
+                    </span>
+                    <div className="flex items-baseline gap-1.5">
+                      <span className="text-3xl font-black text-[#00D1B2] tracking-tight">
+                        {typeof lane.impacto_anual === 'number'
+                          ? `+$${lane.impacto_anual.toLocaleString()}`
+                          : lane.impacto_anual}
+                      </span>
+                      <span className="text-xs font-bold text-white uppercase tracking-wider">
+                        USD/año
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           ) : (
-            /* Caso 2 Block */
-            <div className="flex flex-col gap-1 mb-4 text-left">
+            <div className="mt-auto pt-6 border-t border-white/[0.03] flex flex-col gap-1 text-left">
               <span className="text-[10px] md:text-xs font-black text-[#00D1B2] uppercase tracking-widest flex items-center gap-1.5">
                 ✓ SIN FUGAS CONFIRMADAS
               </span>
               <span className="text-sm font-extrabold text-white uppercase tracking-wider mt-0.5">
                 COLCHÓN OPERATIVO
               </span>
-              <p className="text-xs text-neutral-400 font-semibold leading-relaxed mt-1 mb-3">
+              <p className="text-xs text-neutral-400 font-semibold leading-relaxed mt-1">
                 Mantener el margen de seguridad y seguir monitoreando la operación.
               </p>
             </div>
           )}
-
-          <div className="flex flex-col gap-1 mb-5">
-            <span className="text-[10px] md:text-xs font-black text-[#00D1B2] uppercase tracking-widest flex items-center gap-1.5">
-              {getLaneIcon(lane.categoria)} {lane.categoria}
-            </span>
-            {lane.prioridad && (
-              <span className="text-[11px] text-neutral-500 font-bold uppercase tracking-wider">
-                {lane.prioridad}
-              </span>
-            )}
-          </div>
         </div>
-
-        {lane.que_intervenir && (
-          <div className="pt-6 border-t border-[#2E333C]/40 flex flex-col">
-            <span className="text-[9px] text-neutral-500 font-extrabold uppercase tracking-wider mb-2">Qué intervenir</span>
-            <p className="text-xs text-neutral-400 leading-relaxed font-semibold">
-              {lane.que_intervenir}
-            </p>
-          </div>
-        )}
       </div>
     );
   };
@@ -2192,45 +2360,49 @@ function AuditoriaFormContent() {
                     {/* Nombre del Inmueble */}
                     <div className="flex flex-col gap-1.5">
                       <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Nombre del inmueble</label>
-                      <input 
+                      <input
                         type="text"
                         name="property_name"
                         value={formData.property_name}
                         onChange={handleInputChange}
-                        className="w-full bg-[#18181A] border border-white/10 rounded-xl px-4 py-2.5 text-xs text-zinc-300 focus:outline-none focus:border-[#00D1B2]"
+                        placeholder="Ej. Villa Coral, Apartamento Chacao..."
+                        className="w-full bg-[#18181A] border border-white/10 rounded-xl px-4 py-2.5 text-xs text-zinc-300 placeholder-zinc-500 focus:outline-none focus:border-[#00D1B2]"
                       />
                     </div>
                     {/* País */}
                     <div className="flex flex-col gap-1.5">
                       <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">País</label>
-                      <input 
+                      <input
                         type="text"
                         name="country"
                         value={formData.country}
                         onChange={handleInputChange}
-                        className="w-full bg-[#18181A] border border-white/10 rounded-xl px-4 py-2.5 text-xs text-zinc-300 focus:outline-none focus:border-[#00D1B2]"
+                        placeholder="Ej. España"
+                        className="w-full bg-[#18181A] border border-white/10 rounded-xl px-4 py-2.5 text-xs text-zinc-300 placeholder-zinc-500 focus:outline-none focus:border-[#00D1B2]"
                       />
                     </div>
                     {/* Ciudad */}
                     <div className="flex flex-col gap-1.5">
                       <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Ciudad</label>
-                      <input 
+                      <input
                         type="text"
                         name="city"
                         value={formData.city}
                         onChange={handleInputChange}
-                        className="w-full bg-[#18181A] border border-white/10 rounded-xl px-4 py-2.5 text-xs text-zinc-300 focus:outline-none focus:border-[#00D1B2]"
+                        placeholder="Ej. Barcelona"
+                        className="w-full bg-[#18181A] border border-white/10 rounded-xl px-4 py-2.5 text-xs text-zinc-300 placeholder-zinc-500 focus:outline-none focus:border-[#00D1B2]"
                       />
                     </div>
                     {/* Tipo de Propiedad */}
                     <div className="flex flex-col gap-1.5">
                       <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Tipo de propiedad</label>
-                      <input 
+                      <input
                         type="text"
                         name="property_type"
                         value={formData.property_type}
                         onChange={handleInputChange}
-                        className="w-full bg-[#18181A] border border-white/10 rounded-xl px-4 py-2.5 text-xs text-zinc-300 focus:outline-none focus:border-[#00D1B2]"
+                        placeholder="Ej. Apartamento"
+                        className="w-full bg-[#18181A] border border-white/10 rounded-xl px-4 py-2.5 text-xs text-zinc-300 placeholder-zinc-500 focus:outline-none focus:border-[#00D1B2]"
                       />
                     </div>
                     {/* Tipo de Mercado */}
@@ -2249,56 +2421,61 @@ function AuditoriaFormContent() {
                     {/* Ingreso Mensual */}
                     <div className="flex flex-col gap-1.5">
                       <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Ingreso mensual (USD)</label>
-                      <input 
+                      <input
                         type="number"
                         name="gross_income"
                         value={formData.gross_income}
                         onChange={handleInputChange}
-                        className="w-full bg-[#18181A] border border-white/10 rounded-xl px-4 py-2.5 text-xs text-zinc-300 focus:outline-none focus:border-[#00D1B2]"
+                        placeholder="Ej. 3000"
+                        className="w-full bg-[#18181A] border border-white/10 rounded-xl px-4 py-2.5 text-xs text-zinc-300 placeholder-zinc-500 focus:outline-none focus:border-[#00D1B2]"
                       />
                     </div>
                     {/* Noches Ocupadas */}
                     <div className="flex flex-col gap-1.5">
                       <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Noches ocupadas</label>
-                      <input 
+                      <input
                         type="number"
                         name="occupied_nights"
                         value={formData.occupied_nights}
                         onChange={handleInputChange}
-                        className="w-full bg-[#18181A] border border-white/10 rounded-xl px-4 py-2.5 text-xs text-zinc-300 focus:outline-none focus:border-[#00D1B2]"
+                        placeholder="Ej. 17"
+                        className="w-full bg-[#18181A] border border-white/10 rounded-xl px-4 py-2.5 text-xs text-zinc-300 placeholder-zinc-500 focus:outline-none focus:border-[#00D1B2]"
                       />
                     </div>
                     {/* Noches Disponibles */}
                     <div className="flex flex-col gap-1.5">
                       <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Noches disponibles</label>
-                      <input 
+                      <input
                         type="number"
                         name="available_nights"
                         value={formData.available_nights}
                         onChange={handleInputChange}
-                        className="w-full bg-[#18181A] border border-white/10 rounded-xl px-4 py-2.5 text-xs text-zinc-300 focus:outline-none focus:border-[#00D1B2]"
+                        placeholder="Ej. 30"
+                        className="w-full bg-[#18181A] border border-white/10 rounded-xl px-4 py-2.5 text-xs text-zinc-300 placeholder-zinc-500 focus:outline-none focus:border-[#00D1B2]"
                       />
                     </div>
                     {/* Gastos Aproximados */}
                     <div className="flex flex-col gap-1.5">
                       <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Gastos aproximados (USD)</label>
-                      <input 
+                      <input
                         type="number"
                         name="approximate_expenses"
                         value={formData.approximate_expenses}
                         onChange={handleInputChange}
-                        className="w-full bg-[#18181A] border border-white/10 rounded-xl px-4 py-2.5 text-xs text-zinc-300 focus:outline-none focus:border-[#00D1B2]"
+                        placeholder="Ej. 1400"
+                        className="w-full bg-[#18181A] border border-white/10 rounded-xl px-4 py-2.5 text-xs text-zinc-300 placeholder-zinc-500 focus:outline-none focus:border-[#00D1B2]"
                       />
                     </div>
                     {/* Email */}
                     <div className="flex flex-col gap-1.5 md:col-span-2 lg:col-span-3">
                       <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Email registrado</label>
-                      <input 
+                      <input
                         type="email"
                         name="email"
                         value={formData.email}
                         onChange={handleInputChange}
-                        className="w-full bg-[#18181A] border border-white/10 rounded-xl px-4 py-2.5 text-xs text-zinc-300 focus:outline-none focus:border-[#00D1B2]"
+                        placeholder="Ej. usuario@gmail.com"
+                        className="w-full bg-[#18181A] border border-white/10 rounded-xl px-4 py-2.5 text-xs text-zinc-300 placeholder-zinc-500 focus:outline-none focus:border-[#00D1B2]"
                       />
                     </div>
                   </div>
@@ -2412,8 +2589,54 @@ function AuditoriaFormContent() {
                   </div>
                 </div>
 
+                {/* ── Aviso dinámico: estimación vs desglose real ── */}
+                {(() => {
+                  const desglosadosSum =
+                    Number(formData.platfom_commission || 0) +
+                    Number(formData.cleaning_cost      || 0) +
+                    Number(formData.services_cost      || 0) +
+                    Number(formData.maintenence_cost   || 0) +
+                    Number(formData.tax_cost           || 0) +
+                    Number(formData.Hidden_cost        || 0);
+                  const express = Number(formData.approximate_expenses || 0);
+                  const show = express > 0 && desglosadosSum > 0 &&
+                    desglosadosSum !== express;
+                  if (!show) return null;
+                  const isHigher = desglosadosSum > express;
+                  const accent   = isHigher ? '#F0B432' : '#34F5C5';
+                  const bgAlpha  = isHigher ? 'rgba(240,180,50,0.04)' : 'rgba(52,245,197,0.04)';
+                  const bdAlpha  = isHigher ? 'rgba(240,180,50,0.18)' : 'rgba(52,245,197,0.16)';
+                  return (
+                    <div
+                      className="rounded-xl flex gap-3 items-start px-4 py-3.5"
+                      style={{ background: bgAlpha, border: `1px solid ${bdAlpha}`, borderLeft: `3px solid ${accent}` }}
+                    >
+                      <span className="text-base leading-tight pt-0.5 shrink-0">
+                        {isHigher ? '⚠️' : '✅'}
+                      </span>
+                      <div className="flex flex-col gap-1.5 min-w-0">
+                        <p className="text-[13px] font-bold text-white leading-snug">
+                          {isHigher
+                            ? 'Tus gastos reales superan tu estimación inicial.'
+                            : 'Tu operación es más eficiente de lo que estimaste.'}
+                        </p>
+                        <p className="text-[12px] text-zinc-400 leading-relaxed">
+                          Ingresaste{' '}
+                          <span className="text-zinc-200 font-semibold">${express.toLocaleString()}/mes</span>{' '}
+                          al inicio — tus datos desglosados suman{' '}
+                          <span className="font-bold" style={{ color: accent }}>${desglosadosSum.toLocaleString()}/mes</span>.
+                          {' '}El diagnóstico operativo usará tus cifras desglosadas.
+                        </p>
+                        <p className="text-[10px] text-zinc-600 border-t border-white/[0.05] pt-2 mt-0.5 leading-relaxed">
+                          Con datos exactos, el sistema detecta fugas reales — no promedios estimados.
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })()}
+
                 <div className="flex flex-col sm:flex-row gap-4 border-t border-white/5 pt-6 mt-4 w-full">
-                  <button 
+                  <button
                     type="button"
                     onClick={handleOpenCheckout}
                     className="flex-1 bg-gradient-to-r from-[#00D1B2] to-[#00FFD1] text-[#0B0B0C] font-black text-xs md:text-sm uppercase tracking-widest px-8 py-4 rounded-full shadow-lg transition-all duration-300 hover:scale-[1.02] flex items-center justify-center gap-2"
@@ -2663,6 +2886,12 @@ function AuditoriaFormContent() {
                                         Tu margen de seguridad es de <span className={`font-black text-[18px] md:text-[20px] ${narrative.accentText}`}>{safety}</span> noches.
                                       </p>
                                     );
+                                  } else if (safety <= 0) {
+                                    return (
+                                      <p className="text-white text-base md:text-lg font-extrabold leading-relaxed">
+                                        Tu operación <span className={`font-black text-[18px] md:text-[20px] ${narrative.accentText}`}>ya está en pérdida</span>. No hay colchón de seguridad.
+                                      </p>
+                                    );
                                   } else {
                                     return (
                                       <p className="text-white text-base md:text-lg font-extrabold leading-relaxed">
@@ -2729,37 +2958,101 @@ function AuditoriaFormContent() {
 
               {/* 3. MÉTRICAS DE SUPERVIVENCIA */}
               <div className="w-full">
-                <SurvivalFormula 
-                  breakEven={activeBreakEven} 
-                  margin={activeMargin} 
-                  baseCost={activeBaseCostPerNight} 
-                  marginOfSafety={activeReport.free?.metrics?.margin_of_safety ?? activeMargin} 
+
+                {/* Resumen de datos fuente — muestra de dónde vienen los números */}
+                {activeReport.datos_entrada && (
+                  <div className="mb-6 flex flex-wrap gap-4 px-1">
+                    {[
+                      { label: 'Facturación bruta', value: `$${Number(activeReport.datos_entrada.gross_income).toLocaleString()}` },
+                      { label: 'Costos totales', value: `$${Number(activeReport.datos_entrada.total_costs).toLocaleString()}` },
+                      { label: 'Ingreso neto', value: `$${Number(activeReport.datos_entrada.net_income).toLocaleString()}` },
+                      { label: 'Noches vendidas', value: `${activeReport.datos_entrada.occupied_nights}` },
+                    ].map(item => (
+                      <div key={item.label} className="flex flex-col gap-0.5">
+                        <span className="text-[11px] font-bold uppercase tracking-widest text-zinc-500">{item.label}</span>
+                        <span className="text-base font-black text-zinc-200 tabular-nums">{item.value}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Posicionamiento de precio vs mercado */}
+                {activeReport.posicionamiento_precio?.disponible && (() => {
+                  const pp = activeReport.posicionamiento_precio;
+                  const isBajo = pp.estado === "BAJO_MERCADO";
+                  const isSobre = pp.estado === "SOBRE_MERCADO";
+                  const color = isBajo ? '#F0B432' : isSobre ? '#FF4C4C' : '#00D1B2';
+                  const bg = isBajo ? 'bg-[#F0B432]/[0.03]' : isSobre ? 'bg-[#FF4C4C]/[0.03]' : 'bg-[#00D1B2]/[0.03]';
+                  const border = isBajo ? 'border-[#F0B432]/20' : isSobre ? 'border-[#FF4C4C]/20' : 'border-[#00D1B2]/20';
+                  return (
+                    <div className={`mb-6 rounded-2xl p-4 ${bg} border ${border} flex flex-col sm:flex-row sm:items-center gap-4`}>
+                      <div className="flex gap-6 flex-wrap">
+                        <div className="flex flex-col gap-0.5">
+                          <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Tu ADR</span>
+                          <span className="text-lg font-black text-white tabular-nums">${pp.adr_usuario}</span>
+                        </div>
+                        <div className="flex flex-col gap-0.5">
+                          <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">ADR Zona</span>
+                          <span className="text-lg font-black tabular-nums" style={{ color }}>${pp.adr_mercado}</span>
+                        </div>
+                        <div className="flex flex-col gap-0.5">
+                          <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Gap</span>
+                          <span className="text-lg font-black tabular-nums" style={{ color }}>
+                            {pp.gap_pct >= 0 ? '+' : ''}{pp.gap_pct}%
+                          </span>
+                        </div>
+                        {isBajo && pp.potencial_mensual > 0 && (
+                          <div className="flex flex-col gap-0.5">
+                            <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Potencial precio</span>
+                            <span className="text-lg font-black tabular-nums" style={{ color }}>+${pp.potencial_mensual.toLocaleString()}/mes</span>
+                          </div>
+                        )}
+                      </div>
+                      <p className="text-xs text-zinc-400 leading-relaxed sm:border-l sm:border-white/10 sm:pl-4 max-w-xs">{pp.mensaje}</p>
+                    </div>
+                  );
+                })()}
+
+                <SurvivalFormula
+                  breakEven={activeBreakEven}
+                  margin={activeMargin}
+                  baseCost={activeBaseCostPerNight}
+                  marginOfSafety={activeReport.cabecera?.margin_of_safety ?? activeReport.free?.metrics?.margin_of_safety ?? activeMargin}
                 />
 
                 {/* Fila complementaria de métricas (Expense Ratio & Ingreso Neto) */}
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-2 lg:gap-6 w-full mt-4 md:mt-6">
-                  {/* Expense Ratio Card */}
-                  <div className="flex justify-between items-start p-5 rounded-2xl bg-[#0E1218]/60 border border-[#161B26] min-h-[130px] hover:border-neutral-700 transition-all duration-300 text-left">
-                    <div className="flex flex-col gap-3 text-left max-w-[65%]">
-                      <div className="w-8 h-8 rounded-lg bg-white/[0.02] flex items-center justify-center border border-white/5 text-neutral-400 shrink-0">
-                        <BarChart3 className="h-4 w-4" />
+                  {/* Expense Ratio Card — color dinámico por umbral */}
+                  {(() => {
+                    const er = activeExpenseRatio;
+                    const erColor = er < 60 ? '#34F5C5' : er < 75 ? '#F0B432' : '#FF4C4C';
+                    const erFactor = activeReport.datos_entrada?.gross_income > 0
+                      ? (activeReport.datos_entrada.total_costs / activeReport.datos_entrada.gross_income * 100).toFixed(0)
+                      : er;
+                    return (
+                      <div className="flex justify-between items-start p-5 rounded-2xl bg-[#0E1218]/60 border border-[#161B26] min-h-[130px] hover:border-neutral-700 transition-all duration-300 text-left">
+                        <div className="flex flex-col gap-3 text-left max-w-[65%]">
+                          <div className="w-8 h-8 rounded-lg bg-white/[0.02] flex items-center justify-center border border-white/5 shrink-0" style={{ color: erColor }}>
+                            <BarChart3 className="h-4 w-4" />
+                          </div>
+                          <div>
+                            <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: erColor }}>
+                              EXPENSE RATIO
+                            </span>
+                            <p className="mt-1 text-[10px] leading-normal text-neutral-500 font-medium">
+                              Por cada $100 que ingresas, <strong style={{ color: erColor }}>${erFactor}</strong> van en costos operativos.
+                            </p>
+                          </div>
+                        </div>
+                        <div className="ml-auto flex items-baseline gap-1 pt-1 shrink-0">
+                          <span className="font-sans text-4xl font-black tracking-tighter leading-none select-none" style={{ color: erColor }}>
+                            {activeExpenseRatio}
+                          </span>
+                          <span className="text-[9px] font-bold select-none" style={{ color: erColor }}>%</span>
+                        </div>
                       </div>
-                      <div>
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-400">
-                          EXPENSE RATIO
-                        </span>
-                        <p className="mt-1 text-[10px] leading-normal text-neutral-500 font-medium">
-                          Porcentaje de tus ingresos consumido por costos operativos.
-                        </p>
-                      </div>
-                    </div>
-                    <div className="ml-auto flex items-baseline gap-1 pt-1 shrink-0">
-                      <span className="font-sans text-4xl font-black text-white tracking-tighter leading-none select-none">
-                        {activeExpenseRatio}
-                      </span>
-                      <span className="text-[9px] font-bold text-neutral-500 select-none">%</span>
-                    </div>
-                  </div>
+                    );
+                  })()}
 
                   {/* Net Income Card */}
                   <div className="flex justify-between items-start p-5 rounded-2xl bg-[#0E1218]/60 border border-[#161B26] min-h-[130px] hover:border-neutral-700 transition-all duration-300 text-left">
@@ -2816,54 +3109,62 @@ function AuditoriaFormContent() {
                         </p>
                       </div>
 
-                      <div className="w-full flex flex-col lg:flex-row gap-8 p-6 md:p-8 rounded-2xl bg-[#0E1218]/60 border border-[#161B26] items-center lg:items-stretch">
-                        {/* Columna Izquierda: Radar (45% width) */}
-                        <div className="w-full lg:w-[45%] flex items-center justify-center min-w-0 shrink-0">
-                          <LeakRadar
-                            tusCostosPct={radar?.tus_costos_pct}
-                            benchmarkIdealPct={radar?.benchmark_ideal_pct}
+                      {/* 2×2 grid: barras arriba-izq · dona arriba-der · contexto abajo-izq · conclusión abajo-der */}
+                      <div className="w-full grid grid-cols-1 md:grid-cols-2 rounded-2xl bg-[#0E1218]/60 border border-[#161B26] overflow-hidden">
+
+                        {/* ── Arriba izquierda: Barras ── */}
+                        <div className="p-6 md:p-8 border-b border-white/[0.05] md:border-r">
+                          <LeakBars
                             labels={radar?.labels}
                             actualPctRevenue={leakRadar?.actual_pct_of_revenue}
                             benchmarkPctRevenue={leakRadar?.benchmark_pct}
-                            showEfficientBox={false}
+                            benchmarkIdealPct={radar?.benchmark_ideal_pct}
                           />
                         </div>
 
-                        {/* Línea divisoria en desktop */}
-                        <div className="hidden lg:block w-[1px] bg-white/5 shrink-0 self-stretch my-2" />
+                        {/* ── Arriba derecha: Dona ── */}
+                        <div className="p-6 md:p-8 border-b border-white/[0.05]">
+                          <LeakDonut
+                            tusCostosPct={radar?.tus_costos_pct}
+                            labels={radar?.labels}
+                            actualCosts={[commissionVal, cleaningVal, servicesVal, maintenanceVal, taxVal, hiddenVal]}
+                          />
+                        </div>
 
-                        {/* Columna Derecha: Conclusión y Contexto (Vertical Stack with larger spacing) */}
-                        <div className="flex-1 flex flex-col gap-12 text-left min-w-0 justify-between">
-                          {/* 1. Conclusión Ejecutiva */}
-                          <div className="flex flex-col gap-3 justify-center flex-1">
-                            <span className="text-[10px] font-extrabold text-[#00D1B2] uppercase tracking-widest block">
-                              CONCLUSIÓN EJECUTIVA
-                            </span>
-                            <p className="text-white text-lg md:text-xl lg:text-2xl font-bold leading-relaxed">
-                              {cazafugas?.conclusion?.mensaje || cazafugas?.status_message || cazafugas?.resumen || ""}
+                        {/* ── Abajo izquierda: Contexto operativo ── */}
+                        <div className="p-6 md:p-8 md:border-r border-white/[0.05]">
+                          <span className="text-[10px] font-extrabold text-neutral-500 uppercase tracking-widest block mb-3">
+                            CONTEXTO OPERATIVO
+                          </span>
+                          <div className="p-4 rounded-xl bg-white/[0.02] border border-white/5">
+                            <p className="text-neutral-300 text-xs md:text-sm font-semibold leading-relaxed">
+                              {cazafugas?.leak_analysis_contexto?.contribucion}
                             </p>
                           </div>
-
-                          {/* 2. Contexto Operativo */}
-                          <div className="flex flex-col gap-2 pt-10 border-t border-white/[0.03]">
-                            <span className="text-[10px] font-extrabold text-neutral-500 uppercase tracking-widest block">
-                              CONTEXTO OPERATIVO
-                            </span>
-                            <div className="p-4 rounded-xl bg-white/[0.02] border border-white/5 mt-2">
-                              <p className="text-neutral-300 text-xs md:text-sm font-semibold leading-relaxed">
-                                {cazafugas?.leak_analysis_contexto?.contribucion}
-                              </p>
-                            </div>
-                          </div>
                         </div>
+
+                        {/* ── Abajo derecha: Conclusión ejecutiva ── */}
+                        <div className="p-6 md:p-8 flex flex-col gap-3 justify-center">
+                          <span className="text-[10px] font-extrabold text-[#00D1B2] uppercase tracking-widest block">
+                            CONCLUSIÓN EJECUTIVA
+                          </span>
+                          <p className="text-white text-lg md:text-xl lg:text-2xl font-bold leading-relaxed">
+                            {cazafugas?.conclusion?.mensaje || cazafugas?.status_message || cazafugas?.resumen || ""}
+                          </p>
+                        </div>
+
                       </div>
                     </div>
 
                     {/* BLOQUE 2: ANÁLISIS POR PILARES */}
                     {(() => {
+                      // New N8N sends all 4 pillars in fortalezas; deduplicate to avoid doubles
+                      const _fromFortalezas = cazafugas?.fortalezas || [];
+                      const _fromAtencion = cazafugas?.areas_atencion || [];
+                      const _seen = new Set(_fromFortalezas.map((p: any) => p.pilar || p.nombre));
                       const allPilares = [
-                        ...(cazafugas?.fortalezas || []),
-                        ...(cazafugas?.areas_atencion || [])
+                        ..._fromFortalezas,
+                        ..._fromAtencion.filter((p: any) => !_seen.has(p.pilar || p.nombre))
                       ];
 
                       const solidPilares = allPilares.filter((p: any) => {
@@ -2886,6 +3187,11 @@ function AuditoriaFormContent() {
                                 FORTALEZAS DE LA OPERACIÓN
                               </span>
                               <div className="flex flex-col gap-4">
+                                {solidPilares.length === 0 && (
+                                  <p className="text-sm text-zinc-500 font-medium leading-relaxed">
+                                    No se identificaron pilares saludables en esta operación. Todos los indicadores requieren atención prioritaria.
+                                  </p>
+                                )}
                                 {solidPilares.map((fort: any) => {
                                   const normState = getNormalizedState(fort.estado);
                                   const formattedMetric = formatMetrica(fort.nombre || fort.pilar, fort.metrica);
@@ -3007,123 +3313,91 @@ function AuditoriaFormContent() {
               subtitle={estratega.introduccion || "¿Qué intervenciones generan el mayor impacto económico?"} 
             />
 
-            {/* Layout Adaptativo de Tarjetas Priorizadas */}
+            {/* Layout Vertical — todas las intervenciones apiladas en orden de prioridad */}
+            {intervenciones.length > 0 && (
+              <div className="flex flex-col gap-6 w-full text-left mb-4">
+                {intervenciones.map((lane: any, index: number) => (
+                  <div key={index} className="w-full">
+                    {renderMainCard(lane)}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Tarjeta de cierre — RESUMEN con 3 KPIs ancla */}
             {(() => {
-              const count = intervenciones.length;
-              if (count === 0) return null;
+              const leaksTotal = activeReport?.leak_analysis?.total_recoverable_monthly || 0;
+              const pp = activeReport?.posicionamiento_precio;
+              const pricingPotential = (pp?.disponible && pp?.estado === 'BAJO_MERCADO') ? (pp?.potencial_mensual || 0) : 0;
+              const grandTotal = leaksTotal + pricingPotential;
 
-              if (count === 1) {
-                // Si existe UNA prioridad: La tarjeta ocupa prácticamente todo el ancho disponible
-                return (
-                  <div className="w-full text-left mb-4">
-                    {renderMainCard(intervenciones[0])}
-                  </div>
-                );
+              // KPI 1 — Score + estado
+              const estadoLabel = riskLevel === 'HIGH' ? 'CRÍTICO' : riskLevel === 'MEDIUM' ? 'VULNERABLE' : 'SALUDABLE';
+              const estadoColor = riskLevel === 'HIGH' ? 'text-red-400' : riskLevel === 'MEDIUM' ? 'text-[#F0B432]' : 'text-emerald-400';
+
+              // KPI 3 — Posición tarifaria
+              const ppDisponible = pp?.disponible;
+              const ppEstado = pp?.estado;
+              const ppGapPct = pp?.gap_pct;
+              let tarifaLabel = '';
+              let tarifaColor = 'text-zinc-500';
+              if (!ppDisponible) {
+                tarifaLabel = 'Sin datos de mercado';
+              } else if (ppEstado === 'SOBRE_MERCADO') {
+                tarifaLabel = `+${Math.abs(ppGapPct)}% sobre mercado ⚠`;
+                tarifaColor = 'text-[#F0B432]';
+              } else if (ppEstado === 'BAJO_MERCADO') {
+                tarifaLabel = `${Math.abs(ppGapPct)}% bajo mercado ↗`;
+                tarifaColor = 'text-[#00D1B2]';
+              } else {
+                tarifaLabel = 'Posicionamiento correcto ✓';
+                tarifaColor = 'text-emerald-400';
               }
 
-              if (count === 2) {
-                // Si existen DOS prioridades: Grid 2 columnas
-                return (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full text-left mb-4">
-                    {renderMainCard(intervenciones[0])}
-                    {renderSecondaryCard(intervenciones[1])}
-                  </div>
-                );
-              }
-
-              if (count === 3) {
-                // Si existen TRES prioridades: Tarjeta principal grande a la izquierda, dos apiladas a la derecha
-                return (
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 w-full text-left items-stretch mb-4">
-                    <div className="h-full">
-                      {renderMainCard(intervenciones[0])}
-                    </div>
-                    <div className="flex flex-col gap-6 h-full justify-between">
-                      {renderSecondaryCard(intervenciones[1])}
-                      {renderSecondaryCard(intervenciones[2])}
-                    </div>
-                  </div>
-                );
-              }
-
-              // Si existen CUATRO o más: Mantener el layout actual
               return (
-                <div className="flex flex-col lg:flex-row gap-6 mb-4 w-full items-stretch text-left">
-                  {/* COLUMNA IZQUIERDA: OPORTUNIDAD PRINCIPAL */}
-                  <div className="flex-1 flex flex-col gap-4 min-w-0">
-                    {renderMainCard(intervenciones[0])}
-                  </div>
+                <div className="bg-gradient-to-b from-[#1A1D23] to-[#0B0C10] border border-[#2E333C]/40 rounded-3xl p-6 mt-2 mb-8 relative overflow-hidden group text-left w-full shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
+                  <div className="absolute -right-20 -bottom-20 w-48 h-48 bg-[#00D1B2]/5 rounded-full blur-[40px] pointer-events-none group-hover:bg-[#00D1B2]/8 animate-pulse" />
 
-                  {/* COLUMNA DERECHA: LAS PRIORIDADES RESTANTES */}
-                  <div className="flex-1 flex flex-col gap-6 min-w-0">
-                    {secondaryInterventions.map((lane: any, index: number) => (
-                      <div key={index} className="h-full">
-                        {renderSecondaryCard(lane)}
+                  <span className="inline-flex items-center px-2 py-0.5 rounded text-[8px] font-extrabold bg-[#00D1B2]/10 border border-[#00D1B2]/20 text-[#00D1B2] tracking-widest uppercase w-fit mb-5">
+                    RESUMEN OPERATIVO DE AUDITORÍA
+                  </span>
+
+                  <div className="flex flex-col gap-4 w-full">
+                    {/* KPI 1: Score operativo */}
+                    <div className="flex items-center justify-between gap-4">
+                      <span className="text-sm font-semibold text-zinc-400">Score operativo</span>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className={`text-[11px] font-extrabold uppercase tracking-wider ${estadoColor}`}>{estadoLabel}</span>
+                        <span className="text-base font-black text-white tabular-nums">{scoreFinal}/100</span>
                       </div>
-                    ))}
+                    </div>
+
+                    <div className="w-full h-[1px] bg-white/10" />
+
+                    {/* KPI 2: Potencial recuperable */}
+                    <div className="flex items-center justify-between gap-4">
+                      <span className="text-sm font-semibold text-zinc-400">Potencial recuperable</span>
+                      <div className="flex flex-col items-end shrink-0">
+                        <span className="text-2xl md:text-3xl font-black text-[#00D1B2] tabular-nums leading-none">
+                          {grandTotal > 0 ? `+$${grandTotal.toLocaleString('en-US')}` : '$0'} USD/mes
+                        </span>
+                        {grandTotal > 0 && (
+                          <span className="text-xs font-bold text-zinc-500 mt-0.5">+${(grandTotal * 12).toLocaleString('en-US')} USD/año</span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="w-full h-[1px] bg-white/10" />
+
+                    {/* KPI 3: Posición tarifaria */}
+                    <div className="flex items-center justify-between gap-4">
+                      <span className="text-sm font-semibold text-zinc-400">Posición tarifaria</span>
+                      <span className={`text-sm font-extrabold tabular-nums shrink-0 ${tarifaColor}`}>{tarifaLabel}</span>
+                    </div>
                   </div>
                 </div>
               );
             })()}
-
-            {/* Tarjeta Premium de Cierre (Potencial económico confirmado) - Integrado visualmente al final del Estratega */}
-            <div className="bg-gradient-to-b from-[#1A1D23] to-[#0B0C10] border border-[#2E333C]/40 rounded-3xl p-6 mt-2 mb-8 relative overflow-hidden group text-left w-full shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
-              <div className="absolute -right-20 -bottom-20 w-48 h-48 bg-[#00D1B2]/5 rounded-full blur-[40px] pointer-events-none group-hover:bg-[#00D1B2]/8 animate-pulse" />
-              
-              {/* Parte superior of the card */}
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
-                <div className="flex flex-col gap-1">
-                  <span className="inline-flex items-center px-2 py-0.5 rounded text-[8px] font-extrabold bg-[#00D1B2]/10 border border-[#00D1B2]/20 text-[#00D1B2] tracking-widest uppercase w-fit">
-                    AUDITORÍA COMPLETADA
-                  </span>
-                  <h3 className="text-lg md:text-xl font-black text-white uppercase tracking-tight">
-                    Potencial económico confirmado
-                  </h3>
-                </div>
-                <div className="flex flex-col justify-center items-start sm:items-end shrink-0">
-                  <div className="text-2xl md:text-3xl font-black text-[#00D1B2] leading-none">
-                    {`+$${Number(heroMensualVal).toLocaleString('en-US')} USD / mes`}
-                  </div>
-                  <div className="text-base font-black text-zinc-400 mt-1 leading-none">
-                    {`+$${Number(heroAnualVal).toLocaleString('en-US')} USD / año`}
-                  </div>
-                </div>
-              </div>
-
-              {/* Línea divisoria */}
-              <div className="w-full h-[1px] bg-white/5 my-4" />
-
-              {/* Parte inferior: dos columnas */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
-                {/* Columna izquierda */}
-                <div className="flex flex-col gap-3 text-left">
-                  <h4 className="text-[10px] font-extrabold text-neutral-500 uppercase tracking-widest">
-                    Este reporte respondió
-                  </h4>
-                  <div className="flex flex-col gap-2 text-neutral-300 text-xs md:text-sm font-semibold leading-relaxed">
-                    <div className="flex items-center gap-2">
-                      <span className="text-[#00D1B2] font-black">✓</span> ¿Cuánto dinero puedes recuperar?
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-[#00D1B2] font-black">✓</span> ¿Dónde se encuentra ese potencial?
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-[#00D1B2] font-black">✓</span> ¿Qué debes intervenir primero?
-                    </div>
-                  </div>
-                </div>
-
-                {/* Columna derecha */}
-                <div className="flex flex-col gap-2 text-left border-t border-white/5 pt-4 md:border-t-0 md:pt-0 md:pl-6 md:border-l md:border-white/5">
-                  <h4 className="text-[10px] font-extrabold text-neutral-500 uppercase tracking-widest">
-                    Pero todavía queda una pregunta
-                  </h4>
-                  <p className="text-white text-sm md:text-base lg:text-lg font-black leading-snug tracking-tight">
-                    ¿Cuánto dinero más podría generar esta propiedad si compitiera al máximo de su potencial?
-                  </p>
-                </div>
-              </div>
-            </div>
 
             {/* SECCIÓN 4: SIGUIENTE NIVEL CON FONDO DE MAPA ESTILO PROPIQDATA (FULL SCREEN BREAKOUT) */}
             <div className="relative w-screen left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] overflow-hidden py-16 mt-8 bg-[#0B0B0C]">
@@ -3138,71 +3412,24 @@ function AuditoriaFormContent() {
               </div>
 
               <div className="relative z-10 w-full max-w-[1440px] mx-auto px-4 sm:px-8 lg:px-12 flex flex-col items-center">
-                <div className="w-full text-center mb-8 animate-in fade-in slide-in-from-top-4 duration-500 flex flex-col items-center gap-2">
-                  {/* Narrativa superior */}
-                  <div className="text-[16px] md:text-[18px] font-semibold text-neutral-400">
-                    La auditoría operativa ha finalizado.
-                  </div>
-
-                  {/* Título Principal */}
-                  <h2 className="text-[34px] sm:text-[42px] md:text-[48px] font-extrabold text-white leading-tight uppercase tracking-tight mt-1">
-                    ¿Y AHORA QUÉ SIGUE?
+                <div className="flex flex-col items-center text-center gap-6 max-w-2xl py-8 animate-in fade-in duration-500">
+                  <p className="text-base md:text-lg font-semibold text-neutral-400">
+                    Ya tienes la foto completa de tu operación.
+                  </p>
+                  <h2 className="text-[26px] sm:text-[32px] md:text-[38px] font-black text-white leading-tight tracking-tight">
+                    Ahora la pregunta es: ¿qué está haciendo tu competencia que tú todavía no ves?
                   </h2>
-
-                  {/* Subtítulo */}
-                  <p className="text-[20px] md:text-[24px] font-semibold text-[#00D1B2] leading-snug mt-2 max-w-3xl">
-                    Ya identificamos el dinero que tu operación está perdiendo. Ahora podemos descubrir el dinero que todavía no está generando.
-                  </p>
-                </div>
-
-                <div className="flex flex-col gap-6 text-center items-center animate-in fade-in duration-500 w-full">
-
-                  {/* Línea de Texto Directa */}
-                  <p className="text-neutral-300 text-sm md:text-base font-semibold leading-relaxed text-center my-4 max-w-2xl">
-                    El siguiente análisis ya no busca reducir pérdidas. Busca aumentar tus ingresos.
-                  </p>
-
-                  {/* Cuatro bloques horizontales elegantes */}
-                  <div className="flex flex-col gap-3.5 text-neutral-200 text-sm md:text-base font-semibold leading-relaxed text-center items-center mb-10 w-full">
-                    <div className="flex items-center justify-center gap-3 py-2.5 border-b border-white/[0.03] w-full max-w-xl">
-                      <span className="text-[#00D1B2] font-black">✓</span>
-                      <span>Encontrar el ADR óptimo para cada fecha.</span>
-                    </div>
-                    <div className="flex items-center justify-center gap-3 py-2.5 border-b border-white/[0.03] w-full max-w-xl">
-                      <span className="text-[#00D1B2] font-black">✓</span>
-                      <span>Detectar oportunidades frente a tu competencia.</span>
-                    </div>
-                    <div className="flex items-center justify-center gap-3 py-2.5 border-b border-white/[0.03] w-full max-w-xl">
-                      <span className="text-[#00D1B2] font-black">✓</span>
-                      <span>Aprovechar eventos y cambios de demanda.</span>
-                    </div>
-                    <div className="flex items-center justify-center gap-3 py-2.5 w-full max-w-xl">
-                      <span className="text-[#00D1B2] font-black">✓</span>
-                      <span>Maximizar el ingreso anual de tu propiedad.</span>
-                    </div>
-                  </div>
-
-                  {/* CTA Final */}
-                  <div className="bg-gradient-to-b from-[#1A1D23] to-[#0B0C10] border border-[#2E333C]/40 rounded-3xl p-8 flex flex-col items-center text-center relative overflow-hidden group w-full max-w-2xl mx-auto shadow-[0_20px_50px_rgba(0,0,0,0.5)] mb-8">
-                    <div className="absolute -right-24 -bottom-24 w-48 h-48 bg-[#00D1B2]/5 rounded-full blur-[40px] pointer-events-none group-hover:bg-[#00D1B2]/8 transition-all duration-500" />
-                    <h3 className="text-lg md:text-xl font-black text-white tracking-tight mb-2 uppercase">
-                      DESBLOQUEA EL SIGUIENTE NIVEL
-                    </h3>
-                    <p className="text-neutral-400 text-xs md:text-sm font-semibold mb-6 max-w-md">
-                      Convierte una operación eficiente en una operación de máximo rendimiento.
-                    </p>
-                    <div className="flex flex-col items-center gap-2">
-                      <button 
-                        type="button"
-                        onClick={() => setIsBetaModalOpen(true)}
-                        className="bg-[#00D1B2] hover:bg-[#00D1B2]/90 text-[#0B0B0C] font-extrabold text-sm uppercase tracking-widest px-8 py-3.5 rounded-full shadow-lg transition-all duration-300 hover:scale-[1.02] font-sans"
-                      >
-                        Descubrir mi potencial de ingresos
-                      </button>
-                      <span className="text-[9px] font-extrabold text-neutral-500 uppercase tracking-widest mt-1">
-                        Powered by AIRLOCAL Revenue Intelligence
-                      </span>
-                    </div>
+                  <div className="flex flex-col items-center gap-2 mt-2">
+                    <button
+                      type="button"
+                      onClick={() => setIsBetaModalOpen(true)}
+                      className="bg-[#00D1B2] hover:bg-[#00D1B2]/90 text-[#0B0B0C] font-extrabold text-sm uppercase tracking-widest px-8 py-3.5 rounded-full shadow-lg transition-all duration-300 hover:scale-[1.02] font-sans"
+                    >
+                      Descubrir el punto ciego de mi competencia →
+                    </button>
+                    <span className="text-[9px] font-extrabold text-neutral-500 uppercase tracking-widest mt-1">
+                      Powered by AIRLOCAL Revenue Intelligence
+                    </span>
                   </div>
                 </div>
               </div>
@@ -3254,7 +3481,7 @@ function AuditoriaFormContent() {
                     }}
                     className="w-full max-w-md bg-[#00D1B2] hover:bg-[#00D1B2]/90 text-[#0B0B0C] font-extrabold text-xs md:text-sm uppercase tracking-widest px-8 py-4 rounded-full shadow-[0_0_30px_rgba(0,209,178,0.35)] transition-all duration-300 hover:scale-[1.02] font-sans"
                   >
-                    VER MI DESGLOSE EXACTO →
+                    VER MI DIAGNÓSTICO OPERATIVO →
                   </button>
 
                   <span className="text-[9px] font-extrabold text-neutral-500 uppercase tracking-widest">
@@ -3452,6 +3679,7 @@ function AuditoriaFormContent() {
                       onChange={handleInputChange}
                       required
                       min="1"
+                      placeholder="Ej. 4"
                       className="w-full bg-[#18181A] border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-zinc-400 focus:outline-none focus:border-[#00D1B2] focus:ring-1 focus:ring-[#00D1B2] transition-all font-mono"
                     />
                   </div>
@@ -3469,6 +3697,7 @@ function AuditoriaFormContent() {
                       onChange={handleInputChange}
                       required
                       min="1"
+                      placeholder="Ej. 2"
                       className="w-full bg-[#18181A] border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-zinc-400 focus:outline-none focus:border-[#00D1B2] focus:ring-1 focus:ring-[#00D1B2] transition-all font-mono"
                     />
                   </div>
@@ -3486,6 +3715,7 @@ function AuditoriaFormContent() {
                       onChange={handleInputChange}
                       required
                       min="1"
+                      placeholder="Ej. 1"
                       className="w-full bg-[#18181A] border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-zinc-400 focus:outline-none focus:border-[#00D1B2] focus:ring-1 focus:ring-[#00D1B2] transition-all font-mono"
                     />
                   </div>
@@ -3518,10 +3748,11 @@ function AuditoriaFormContent() {
                         id="gross_income"
                         name="gross_income"
                         min="0"
+                        placeholder="Ej. 3000"
                         value={formData.gross_income}
                         onChange={handleInputChange}
                         onFocus={handleInputFocus}
-                        className="w-full bg-[#0B0B0C] border border-white/10 rounded-lg pl-8 pr-4 py-3 text-base text-white focus:outline-none focus:border-[#00D1B2] transition-all font-mono"
+                        className="w-full bg-[#0B0B0C] border border-white/10 rounded-lg pl-8 pr-4 py-3 text-base text-white placeholder-zinc-500 focus:outline-none focus:border-[#00D1B2] transition-all font-mono"
                       />
                     </div>
                     <span className="text-[10px] text-zinc-500">Suma total aproximada cobrada en reservas este mes.</span>
@@ -3539,10 +3770,11 @@ function AuditoriaFormContent() {
                         id="approximate_expenses"
                         name="approximate_expenses"
                         min="0"
+                        placeholder="Ej. 1400"
                         value={formData.approximate_expenses}
                         onChange={handleInputChange}
                         onFocus={handleInputFocus}
-                        className="w-full bg-[#0B0B0C] border border-white/10 rounded-lg pl-8 pr-4 py-3 text-base text-white focus:outline-none focus:border-[#00D1B2] transition-all font-mono"
+                        className="w-full bg-[#0B0B0C] border border-white/10 rounded-lg pl-8 pr-4 py-3 text-base text-white placeholder-zinc-500 focus:outline-none focus:border-[#00D1B2] transition-all font-mono"
                       />
                     </div>
                     <span className="text-[10px] text-zinc-500">Suma estimada de todos tus costos mensuales de operación.</span>
@@ -3559,14 +3791,19 @@ function AuditoriaFormContent() {
                         id="competitive_adr"
                         name="competitive_adr"
                         min="0"
-                        placeholder="$250"
+                        placeholder="Ej. 250"
                         value={formData.competitive_adr}
                         onChange={handleInputChange}
                         onFocus={handleInputFocus}
                         className="w-full bg-[#0B0B0C] border border-white/10 rounded-lg px-4 py-3 text-base text-white focus:outline-none focus:border-[#00D1B2] transition-all font-mono"
                       />
                     </div>
-                    <span className="text-[10px] text-zinc-500">Opcional. Tarifa promedio de competidores directos en tu área.</span>
+                    <div className="mt-2 flex items-start gap-2 rounded-lg bg-[#F0B432]/10 border border-[#F0B432]/20 px-3 py-2">
+                      <span className="text-[#F0B432] text-sm leading-none mt-0.5 shrink-0">⚠</span>
+                      <span className="text-[11px] text-[#F0B432]/80 leading-relaxed">
+                        Opcional, pero de alto impacto. Si lo completas, usa el precio real de propiedades similares en tu zona — un valor incorrecto puede distorsionar las conclusiones del reporte.
+                      </span>
+                    </div>
                   </div>
                 </div>
 
@@ -3790,6 +4027,28 @@ function AuditoriaFormContent() {
         </div>
       )}
 
+      {/* POPUP VALIDACIÓN */}
+      {validationMsg && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => setValidationMsg('')}>
+          <div
+            className="relative w-full max-w-sm bg-[#121318] border border-[#00D1B2]/30 rounded-2xl p-6 shadow-[0_0_60px_rgba(0,209,178,0.15)] text-center animate-in fade-in zoom-in-95 duration-200"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="w-12 h-12 rounded-full bg-[#00D1B2]/10 border border-[#00D1B2]/20 flex items-center justify-center mx-auto mb-4">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#00D1B2" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            </div>
+            <p className="text-xs font-black uppercase tracking-widest text-[#00D1B2] mb-2">Campo requerido</p>
+            <p className="text-sm text-zinc-300 leading-relaxed mb-6">{validationMsg}</p>
+            <button
+              onClick={() => setValidationMsg('')}
+              className="w-full bg-[#00D1B2] hover:bg-[#00bfa3] text-[#0B0B0C] font-bold text-sm py-3 rounded-xl transition-colors"
+            >
+              Entendido
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* MODAL CHECKOUT PAYPAL REPLICA */}
       {isCheckoutModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-in fade-in duration-300">
@@ -3942,7 +4201,9 @@ export default function AuditoriaTestPage() {
           background:conic-gradient(from 0deg,rgba(52,245,197,0.18),transparent 22%);
           border-radius:50%;transform:translateX(-50%);
           animation:al-sweep 7s linear infinite;mix-blend-mode:screen;
+          display:none;
         }
+        body[data-auditoria-step="0"] .al-bg-sweep { display:block; }
         @keyframes al-sweep{to{transform:translateX(-50%) rotate(360deg);}}
         .al-bg-map{
           position:absolute;inset:0;background-size:cover;background-position:center;
@@ -3953,6 +4214,14 @@ export default function AuditoriaTestPage() {
         .al-bg-map-scrim{
           position:absolute;inset:0;
           background:radial-gradient(ellipse 60% 55% at 50% 32%,rgba(11,11,12,0.82) 0%,rgba(11,11,12,0.45) 55%,rgba(11,11,12,0.05) 100%);
+        }
+        .al-form-fields input[placeholder]:not(:placeholder-shown){
+          border-color:rgba(0,209,178,0.38) !important;
+        }
+        .al-form-fields input[placeholder]:focus{
+          border-color:rgba(0,209,178,1) !important;
+          box-shadow:0 0 0 1px rgba(0,209,178,0.22) !important;
+          outline:none !important;
         }
       `}</style>
       <main className="min-h-screen bg-[#0B0B0C] text-[#eeeeee] font-sans selection:bg-[#00FFD1]/30 flex flex-col overflow-x-hidden">
@@ -3979,7 +4248,7 @@ export default function AuditoriaTestPage() {
         </header>
 
         {/* Outer content container */}
-        <div className="flex-1 w-full max-w-[1440px] mx-auto flex flex-col pt-16 md:pt-24 pb-12 px-4 sm:px-8 lg:px-12" style={{position:'relative',zIndex:1}}>
+        <div className="al-form-fields flex-1 w-full max-w-[1440px] mx-auto flex flex-col pt-16 md:pt-24 pb-12 px-4 sm:px-8 lg:px-12" style={{position:'relative',zIndex:1}}>
           
           {/* 3. MULTI-STEP NATIVE FORM COMPONENT */}
           <AuditoriaFormContent />

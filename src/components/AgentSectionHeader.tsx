@@ -15,25 +15,25 @@ interface AgentSectionHeaderProps {
 const agentDict = {
   guardian: {
     name: "El Guardián",
-    icon: "/agents/guardian.png",
+    icon: "/assets/icon-guardian.webp",
     color: "#00D1B2",
     description: "Analizó la salud financiera de tu propiedad e identificó el potencial económico actual."
   },
   leakHunter: {
     name: "El Cazafugas",
-    icon: "/agents/leak-hunter.png",
+    icon: "/assets/icon-cazafugas.webp",
     color: "#00D1B2",
     description: "Identificó las principales fugas que afectan tu rentabilidad."
   },
   strategist: {
     name: "El Estratega",
-    icon: "/agents/strategist.png",
+    icon: "/assets/icon-estratega.webp",
     color: "#00D1B2",
     description: "Priorizó las acciones con mayor impacto económico."
   },
   oracle: {
     name: "El Oráculo",
-    icon: "/agents/oracle.png",
+    icon: "/assets/icon-cazafugas.webp",
     color: "#00D1B2",
     description: "Modeló distintos escenarios de recuperación y crecimiento."
   },

@@ -24,6 +24,8 @@ export function HealthGauge({ score, riskLevel }: { score: number; riskLevel?: s
 
   // 1. Dynamic colors of the gauge based strictly on score_final (score)
   const scoreClamped = Math.min(100, Math.max(0, score));
+  // Visual needle gets a minimum of 3 so it never hides behind the left edge at score=0
+  const scoreVisual = Math.max(3, scoreClamped);
   const scoreRisk = scoreClamped >= 70 ? 'LOW' : scoreClamped >= 40 ? 'MEDIUM' : 'HIGH';
   const gaugeColors = colors[scoreRisk];
 
@@ -35,8 +37,8 @@ export function HealthGauge({ score, riskLevel }: { score: number; riskLevel?: s
   const cy = 105;
   const r = 70;
 
-  // Calculate tip coordinates for the circle dot at the end of progress
-  const angleInRad = Math.PI - (scoreClamped / 100) * Math.PI;
+  // Calculate tip coordinates using visual floor so dot is always visible
+  const angleInRad = Math.PI - (scoreVisual / 100) * Math.PI;
   const tx = cx + r * Math.cos(angleInRad);
   const ty = cy - r * Math.sin(angleInRad);
 
@@ -98,7 +100,7 @@ export function HealthGauge({ score, riskLevel }: { score: number; riskLevel?: s
             strokeWidth="16"
             strokeLinecap="round"
             strokeDasharray="220"
-            strokeDashoffset={220 - (220 * scoreClamped) / 100}
+            strokeDashoffset={220 - (220 * scoreVisual) / 100}
             className="transition-all duration-1000 ease-out"
           />
 
@@ -122,13 +124,20 @@ export function HealthGauge({ score, riskLevel }: { score: number; riskLevel?: s
         </svg>
 
         {/* Score text overlay - massive typography */}
-        <div className="absolute bottom-2 left-0 right-0 flex items-baseline justify-center select-none">
-          <span className="font-sans text-6xl md:text-7xl font-black text-white tracking-tighter leading-none select-none">
-            {score}
-          </span>
-          <span className="text-zinc-500 font-sans text-base md:text-lg font-bold ml-1 leading-none select-none">
-            /100
-          </span>
+        <div className="absolute bottom-2 left-0 right-0 flex flex-col items-center justify-center select-none gap-0.5">
+          <div className="flex items-baseline">
+            <span className="font-sans text-6xl md:text-7xl font-black text-white tracking-tighter leading-none select-none">
+              {score}
+            </span>
+            <span className="text-zinc-500 font-sans text-base md:text-lg font-bold ml-1 leading-none select-none">
+              /100
+            </span>
+          </div>
+          {scoreClamped < 20 && (
+            <span className="text-[9px] font-black uppercase tracking-widest" style={{ color: gaugeColors.accent }}>
+              Zona Crítica
+            </span>
+          )}
         </div>
       </div>
 
