@@ -882,6 +882,20 @@ function AuditoriaFormContent() {
             perdida_potencial: potencialVal,
             status: 'analyzed',
           }).eq('id', fetchedData.id).neq('status', 'confirmed').then(() => {});
+
+          // Enviar email de nurturing (fire-and-forget, no bloquea el flujo)
+          const scoreVal = rd?.free?.score ?? rd?.cabecera?.score ?? 0;
+          fetch('/api/send-lead-email', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              email: finalEmail,
+              property_name: String(formData.property_name),
+              estado: riesgoVal,
+              hero_mensual: potencialVal ?? 0,
+              score: scoreVal,
+            }),
+          }).catch(() => {});
         }
       }
       
@@ -4088,7 +4102,8 @@ function AuditoriaFormContent() {
               {/* Price Tag */}
               <div className="w-full bg-white border border-zinc-200 rounded-2xl p-5 mb-6 text-center shadow-[0_4px_12px_rgba(0,0,0,0.02)]">
                 <span className="text-zinc-500 text-xs font-semibold block mb-0.5 uppercase tracking-wider">TOTAL A PAGAR</span>
-                <span className="text-3xl font-black text-[#003087] tracking-tight block mb-2">$47,00 USD</span>
+                <span className="text-3xl font-black text-zinc-400 tracking-tight block mb-1 line-through decoration-red-500 decoration-2">$47,00 USD</span>
+                <span className="text-xs font-bold text-[#008F79] block mb-2">↓ Acceso gratuito con código beta</span>
                 <span 
                   onClick={() => {
                     setAccessCode('BETA2026');
