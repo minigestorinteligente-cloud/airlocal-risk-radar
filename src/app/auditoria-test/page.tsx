@@ -51,6 +51,59 @@ const parseHeroAmount = (val: any, fallbackSuffix: string) => {
   return { value: str, suffix: fallbackSuffix };
 };
 
+// Construye los "hechos" del reporte del usuario para el Analista AIRLOCAL (Forja).
+// Solo pasa lo que YA calculó n8n — el bot no recalcula ni inventa nada.
+function buildForjaFacts(rep: any): string[] {
+  const rd = rep?.report_data || {};
+  const free = rd.free || {};
+  const m = free.metrics || {};
+  const cab = rd.cabecera || {};
+  const isPremium = rep?.report_level === 'premium';
+  const level = isPremium ? 'Auditoría Operativa (pagada)' : 'Auditoría Express (gratis)';
+  const code = rep?.assessment_code || '';
+  const f: string[] = [];
+
+  // El agente inyecta hasta 8 "hechos": empacamos varios campos por hecho para
+  // que los datos clave siempre entren (Express ~4 · Premium ~8).
+  const headline = String(cab.headline || free.headline || '').replace(/^AUDITORÍA:\s*/i, '').trim();
+  f.push(`Tipo de reporte: ${level}.${code ? ' Código: ' + code + '.' : ''}${headline ? ' Titular: ' + headline + '.' : ''}`);
+
+  const ingreso = free.user_summary?.gross_income ?? m.gross_income;
+  const base: string[] = [];
+  if (ingreso != null) base.push(`ingreso bruto $${ingreso}/mes`);
+  if (m.net_income != null) base.push(`ingreso neto $${m.net_income}/mes`);
+  if (m.expense_ratio != null) base.push(`expense ratio ${m.expense_ratio}%`);
+  if (m.avg_nightly_income != null) base.push(`ADR (tarifa promedio) $${m.avg_nightly_income}/noche`);
+  const ocN = m.occupied_nights ?? rd.datos_entrada?.occupied_nights;
+  const avN = m.available_nights ?? rd.datos_entrada?.available_nights ?? 30;
+  if (ocN != null) base.push(`ocupación ${Math.round((Number(ocN) / (Number(avN) || 30)) * 100)}% (${ocN}/${avN} noches)`);
+  if (base.length) f.push(`Sus métricas: ${base.join(', ')}.`);
+
+  const colch: string[] = [];
+  if (m.margin_of_safety != null) colch.push(`margen de seguridad ${m.margin_of_safety} noches`);
+  if (m.break_even_nights != null) colch.push(`punto de equilibrio ${m.break_even_nights} noches`);
+  const score = free.score ?? rd?.tacometro?.score_final;
+  if (score != null) colch.push(`score de salud ${score}/100`);
+  if (colch.length) f.push(`Su colchón operativo: ${colch.join(', ')}.`);
+
+  if (free.hero_display) f.push(`Potencial económico identificado: ${free.hero_display}.`);
+  else if (free.hero_mensual != null) f.push(`Potencial económico identificado: +$${free.hero_mensual}/mes${free.hero_anual != null ? ' (+$' + free.hero_anual + '/año)' : ''}.`);
+
+  // Premium: las fugas priorizadas por impacto (combustible del modo consultor).
+  if (isPremium) {
+    const opp = rd.oportunidades_rentabilidad || {};
+    if (opp.oportunidad_total_mensual != null) {
+      f.push(`Oportunidad total: +$${opp.oportunidad_total_mensual}/mes${opp.oportunidad_total_anual != null ? ' (+$' + opp.oportunidad_total_anual + '/año)' : ''}. Limitante principal: ${opp.principal_limitante || 'n/d'}.`);
+    }
+    const inter = Array.isArray(rd?.estratega?.intervenciones) ? rd.estratega.intervenciones : [];
+    inter.slice(0, 3).forEach((it: any) => {
+      f.push(`Fuga #${it.prioridad} ${it.categoria}: ${it.metrica}. Impacto +$${it.impacto_mensual}/mes. ${it.what_if || ''}`.trim());
+    });
+  }
+
+  return f.map((x) => x.slice(0, 300)).filter(Boolean).slice(0, 8);
+}
+
 const adaptConclusionTone = (text: string, mode: string) => {
   if (!text) return "";
   const cleanMode = (mode || "").trim().toUpperCase();
@@ -345,6 +398,161 @@ function AuditoriaFormContent() {
     email: '',
   });
 
+  // ── Chat "Analista AIRLOCAL" (Forja) — grounded en los datos del reporte ──
+  // Cuando el reporte del usuario ya está cargado, primero registramos SUS datos
+  // en el bot (POST /web/context → se guardan como "hechos" de la sesión) y
+  // sembramos esa sesión en localStorage; luego montamos el widget. Así el
+  // Analista responde con los números reales del usuario. El bot NUNCA recalcula
+  // ni accede a la base del sitio: solo interpreta lo que ya calculó n8n.
+  useEffect(() => {
+    const FORJA = 'https://forja-crm-14bfb5.malenasoloads.workers.dev';
+    if (typeof window === 'undefined') return;
+    // El Analista aparece SOLO donde hay un RESULTADO que interpretar:
+    //  · Express: la vista del diagnóstico/teaser (showPlaceholderForm = false)
+    //  · Operativa: los resultados desbloqueados
+    // Se OCULTA en la pantalla de captura de gastos desglosados (showPlaceholderForm
+    // = true) para no distraer al usuario mientras llena sus datos.
+    const hostPrev = document.querySelector('div[data-forja-widget]') as HTMLElement | null;
+    const shouldShow = currentStep === 4 && !!n8nReport?.report_data && !showPlaceholderForm;
+    if (!shouldShow) {
+      if (hostPrev) hostPrev.style.display = 'none';
+      return;
+    }
+    if (hostPrev) hostPrev.style.display = '';
+    if (document.getElementById('forja-analista-widget')) return; // script ya montado
+
+    // El MODO sigue la PANTALLA, no el nivel del reporte:
+    //  · teaser / pre-desbloqueo  → Express (comprensión + empujar al CTA)
+    //  · desbloqueado (ya pagó)   → Consultor
+    const isPremium = isUnlocked;
+    const free = n8nReport.report_data?.free || {};
+    let saludo: string;
+    if (isPremium) {
+      saludo = 'He terminado de revisar tu Auditoría Operativa. Puedo ayudarte a priorizar tus fugas, simular escenarios y explicar por qué cada recomendación va en ese orden. ¿Sobre qué decisión quieres trabajar?';
+    } else {
+      const pot = free.hero_display || (free.hero_mensual != null ? `+$${free.hero_mensual}/mes` : null);
+      saludo = pot
+        ? `Veo que tu diagnóstico encontró un potencial de ${pot}. Tres indicadores suelen generar dudas: Potencial Económico, Noches de Colchón y Dinero Atrapado. ¿Cuál quieres revisar primero?`
+        : 'Soy tu analista de rentabilidad. ¿Te explico qué significa tu diagnóstico?';
+    }
+
+    const montar = () => {
+      if (document.getElementById('forja-analista-widget')) return;
+      const s = document.createElement('script');
+      s.id = 'forja-analista-widget';
+      s.src = FORJA + '/widget.js';
+      s.async = true;
+      s.setAttribute('data-nombre', 'Analista AIRLOCAL');
+      s.setAttribute('data-saludo', saludo);
+      s.setAttribute('data-tema', 'oscuro');
+      s.setAttribute('data-color', '#3EA293');
+      document.body.appendChild(s);
+
+      const LIMITE = 8;
+      const MSG_LIMITE = 'Has revisado los principales indicadores de tu diagnóstico. La Auditoría Operativa desbloquea el análisis completo y consultas sin límite sobre tu expediente. Haz clic en “Desbloquear análisis completo (47 USD)”.';
+      let intentos = 0;
+      const espera = setInterval(() => {
+        const host = document.querySelector('div[data-forja-widget]') as any;
+        if (!(host && host.shadowRoot)) { if (++intentos > 40) clearInterval(espera); return; }
+        clearInterval(espera);
+        const sr = host.shadowRoot as ShadowRoot;
+
+        // (Sin auto-abrir: la burbuja arranca cerrada para no interrumpir la
+        //  lectura del reporte. El usuario la abre cuando quiere, o desde un chip.)
+
+        // ── Límite de 8 consultas — solo Express (Premium sin límite) ──
+        if (!isPremium) {
+          const aplicar = () => {
+            if (sr.querySelectorAll('.fila.yo').length < LIMITE) return;
+            const ta = sr.querySelector('textarea') as HTMLTextAreaElement | null;
+            const send = sr.querySelector('.enviar') as HTMLButtonElement | null;
+            if (ta) { ta.disabled = true; ta.setAttribute('placeholder', 'Límite de consultas gratuitas alcanzado'); }
+            if (send) send.disabled = true;
+            if (!sr.querySelector('.forja-limite')) {
+              const chat = sr.querySelector('.chat') as HTMLElement | null;
+              if (chat) {
+                const fila = document.createElement('div'); fila.className = 'fila bot forja-limite';
+                const bub = document.createElement('div'); bub.className = 'bub'; bub.textContent = MSG_LIMITE;
+                fila.appendChild(bub); chat.appendChild(fila); chat.scrollTop = chat.scrollHeight;
+              }
+            }
+          };
+          new MutationObserver(aplicar).observe(sr, { childList: true, subtree: true });
+          aplicar();
+        }
+      }, 250);
+    };
+
+    const email = String(n8nReport.email || free.user_summary?.email || '').trim();
+    const code = String(n8nReport.assessment_code || '').trim();
+    const facts = buildForjaFacts(n8nReport);
+    if (facts.length === 0) { montar(); return; }
+    fetch(FORJA + '/web/context', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ facts, email, code }),
+    })
+      .then((r) => r.json())
+      .then((d) => {
+        if (d && d.ok && d.sessionId) {
+          try { localStorage.setItem('forja_web_session', d.sessionId); } catch (e) {}
+        }
+      })
+      .catch(() => {})
+      .finally(montar);
+  }, [n8nReport, currentStep, isUnlocked, showPlaceholderForm]);
+
+  // ── Chips "¿Qué significa?" junto a los indicadores (SOLO Premium desbloqueado) ──
+  // No van en Express: ahi el CTA es el rey y no queremos competirle. Cada chip
+  // abre el chat con esa duda ya lista y el Analista la explica con SUS numeros.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (currentStep !== 4 || !isUnlocked) return; // solo en resultados premium
+
+    const PREGUNTAS: Record<string, string> = {
+      'COLCHÓN OPERATIVO': '¿Qué significa mi colchón operativo?',
+      'MARGEN DE SEGURIDAD': '¿Qué significa mi margen de seguridad?',
+      'EXPENSE RATIO': '¿Qué es el expense ratio y por qué importa en mi caso?',
+      'PISO DE TARIFA': '¿Qué es el piso de tarifa?',
+    };
+
+    const preguntar = (q: string) => {
+      const host = document.querySelector('div[data-forja-widget]') as any;
+      if (!host || !host.shadowRoot) return;
+      const sr = host.shadowRoot as ShadowRoot;
+      const burbuja = sr.querySelector('button.burbuja') as HTMLButtonElement | null;
+      const panel = sr.querySelector('.panel') as HTMLElement | null;
+      if (burbuja && panel && !panel.classList.contains('abierto')) burbuja.click();
+      const ta = sr.querySelector('textarea') as HTMLTextAreaElement | null;
+      const send = sr.querySelector('.enviar') as HTMLButtonElement | null;
+      if (ta && !ta.disabled && send) {
+        ta.value = q; ta.dispatchEvent(new Event('input', { bubbles: true })); send.click();
+      }
+    };
+
+    const poner = () => {
+      document.querySelectorAll('span').forEach((sp) => {
+        const key = (sp.textContent || '').trim().toUpperCase();
+        const q = PREGUNTAS[key];
+        if (!q) return;
+        const next = sp.nextElementSibling as HTMLElement | null;
+        if (next && next.classList && next.classList.contains('forja-chip')) return;
+        const chip = document.createElement('button');
+        chip.className = 'forja-chip';
+        chip.type = 'button';
+        chip.textContent = '¿Qué significa?';
+        chip.style.cssText = 'margin-left:8px;font-size:9px;font-weight:700;color:#3EA293;background:rgba(62,162,147,.12);border:1px solid rgba(62,162,147,.35);border-radius:999px;padding:2px 8px;cursor:pointer;vertical-align:middle;letter-spacing:.02em;white-space:nowrap;';
+        chip.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); preguntar(q); });
+        sp.insertAdjacentElement('afterend', chip);
+      });
+    };
+
+    let n = 0;
+    const iv = setInterval(() => { poner(); if (++n > 20) clearInterval(iv); }, 400);
+    poner();
+    return () => clearInterval(iv);
+  }, [isUnlocked, currentStep, n8nReport]);
+
   // PERSISTENCIA DE DATOS Y MECANISMO DE RESPALDO (FALLBACK) PARA PRUEBAS
   useEffect(() => {
     // Intentar leer el email de la URL
@@ -406,7 +614,10 @@ function AuditoriaFormContent() {
           } catch (e) { /* already parsed */ }
 
           setN8nReport(parsedObj);
-          setShowPlaceholderForm(true);
+          // Free → vista teaser (diagnóstico + CTA) + modo Express.
+          // Premium (ya pagado) → resultados desbloqueados + modo consultor.
+          setShowPlaceholderForm(false);
+          if (parsedObj.report_level === 'premium') setIsUnlocked(true);
 
           // Pre-fill only the non-sensitive fields from the report
           const rd = parsedObj.report_data || {};
@@ -3824,39 +4035,61 @@ function AuditoriaFormContent() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
                   {/* Occupied Nights */}
                   <div className="flex flex-col gap-2">
-                    <label htmlFor="occupied_nights" className="text-xs font-bold uppercase tracking-wider text-zinc-400 flex justify-between">
-                      <span>Noches Ocupadas en el Período</span>
-                      <span className="text-[#00D1B2] font-bold">{formData.occupied_nights} noches</span>
+                    <label className="text-xs font-bold uppercase tracking-wider text-zinc-400">
+                      Noches Ocupadas en el Período
                     </label>
-                    <input
-                      type="range"
-                      id="occupied_nights"
-                      name="occupied_nights"
-                      min="0"
-                      max="31"
-                      value={formData.occupied_nights}
-                      onChange={handleInputChange}
-                      className="w-full h-1.5 bg-[#18181A] rounded-lg appearance-none cursor-pointer accent-[#00D1B2] focus:outline-none"
-                    />
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="range"
+                        id="occupied_nights"
+                        name="occupied_nights"
+                        min="0"
+                        max="31"
+                        value={formData.occupied_nights}
+                        onChange={handleInputChange}
+                        className="flex-1 h-1.5 bg-[#18181A] rounded-lg appearance-none cursor-pointer accent-[#00D1B2] focus:outline-none"
+                      />
+                      <input
+                        type="number"
+                        name="occupied_nights"
+                        min="0"
+                        max="31"
+                        value={formData.occupied_nights}
+                        onChange={handleInputChange}
+                        onFocus={handleInputFocus}
+                        className="w-16 bg-[#18181A] border border-[#00D1B2]/40 rounded-lg px-2 py-1.5 text-sm text-[#00D1B2] font-mono font-bold text-center focus:outline-none focus:border-[#00D1B2] transition-all"
+                      />
+                    </div>
                     <span className="text-[10px] text-zinc-500">Número de noches ocupadas estimadas en el mes.</span>
                   </div>
 
                   {/* Available Nights */}
                   <div className="flex flex-col gap-2">
-                    <label htmlFor="available_nights" className="text-xs font-bold uppercase tracking-wider text-zinc-400 flex justify-between">
-                      <span>Noches Disponibles en el Período</span>
-                      <span className="text-[#00D1B2] font-bold">{formData.available_nights} noches</span>
+                    <label className="text-xs font-bold uppercase tracking-wider text-zinc-400">
+                      Noches Disponibles en el Período
                     </label>
-                    <input
-                      type="range"
-                      id="available_nights"
-                      name="available_nights"
-                      min="0"
-                      max="31"
-                      value={formData.available_nights}
-                      onChange={handleInputChange}
-                      className="w-full h-1.5 bg-[#18181A] rounded-lg appearance-none cursor-pointer accent-[#00D1B2] focus:outline-none"
-                    />
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="range"
+                        id="available_nights"
+                        name="available_nights"
+                        min="0"
+                        max="31"
+                        value={formData.available_nights}
+                        onChange={handleInputChange}
+                        className="flex-1 h-1.5 bg-[#18181A] rounded-lg appearance-none cursor-pointer accent-[#00D1B2] focus:outline-none"
+                      />
+                      <input
+                        type="number"
+                        name="available_nights"
+                        min="0"
+                        max="31"
+                        value={formData.available_nights}
+                        onChange={handleInputChange}
+                        onFocus={handleInputFocus}
+                        className="w-16 bg-[#18181A] border border-[#00D1B2]/40 rounded-lg px-2 py-1.5 text-sm text-[#00D1B2] font-mono font-bold text-center focus:outline-none focus:border-[#00D1B2] transition-all"
+                      />
+                    </div>
                     <span className="text-[10px] text-zinc-500">Noches totales que estuvo disponible tu unidad.</span>
                   </div>
                 </div>
