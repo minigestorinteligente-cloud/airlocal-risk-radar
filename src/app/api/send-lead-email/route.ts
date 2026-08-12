@@ -1,8 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { Resend } from 'resend';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -176,7 +174,8 @@ export async function POST(req: Request) {
       return Response.json({ ok: false, reason: 'already_sent_24h' });
     }
 
-    // 4. Enviar email via Resend
+    // 4. Enviar email via Resend (lazy init para que no explote en build-time sin la key)
+    const resend = new Resend(process.env.RESEND_API_KEY);
     const { error: resendError } = await resend.emails.send({
       from: 'AIRLOCAL <soporte@propiqdata.com>',
       to: email,

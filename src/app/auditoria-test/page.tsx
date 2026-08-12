@@ -3645,13 +3645,16 @@ function AuditoriaFormContent() {
                     Ahora la pregunta es: ¿qué está haciendo tu competencia que tú todavía no ves?
                   </h2>
                   <div className="flex flex-col items-center gap-2 mt-2">
-                    <button
-                      type="button"
-                      onClick={() => setIsBetaModalOpen(true)}
-                      className="bg-[#00D1B2] hover:bg-[#00D1B2]/90 text-[#0B0B0C] font-extrabold text-sm uppercase tracking-widest px-8 py-3.5 rounded-full shadow-lg transition-all duration-300 hover:scale-[1.02] font-sans"
+                    {/* TODO: reactivar cuando NEXT_PUBLIC_PORTAL_URL resuelva a un dominio real — Fase 2/4 del portal.
+                        Reemplazar <span> por <a href={process.env.NEXT_PUBLIC_PORTAL_URL} target="_blank" rel="noopener noreferrer">
+                        y restaurar clases hover:bg-[#00D1B2]/90 hover:scale-[1.02] cursor-pointer opacity-100 */}
+                    {/* OPCIÓN A (activa): TU EXPEDIENTE ESTÁ EN PREPARACIÓN → */}
+                    {/* OPCIÓN B (alternativa): EXPEDIENTE OPERATIVO EN PROCESO → */}
+                    <span
+                      className="bg-[#00D1B2] text-[#0B0B0C] font-extrabold text-sm uppercase tracking-widest px-8 py-3.5 rounded-full font-sans inline-block opacity-60 cursor-default select-none"
                     >
-                      Descubrir el punto ciego de mi competencia →
-                    </button>
+                      TU EXPEDIENTE ESTÁ EN PREPARACIÓN →
+                    </span>
                     <span className="text-[9px] font-extrabold text-neutral-500 uppercase tracking-widest mt-1">
                       Powered by AIRLOCAL Revenue Intelligence
                     </span>

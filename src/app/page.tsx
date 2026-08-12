@@ -342,7 +342,7 @@ h1 .fade{ color:var(--muted-2); }
 }
 .stat-cell{ background:var(--bg-2); padding:24px 14px; text-align:center; }
 .stat-divider{ display:none; }
-.stat-num{ font-family:'JetBrains Mono',monospace; font-weight:700; font-size:clamp(1.5rem,2.6vw,2.1rem); color:var(--lima); }
+.stat-num{ font-family:var(--font-geist-mono),monospace; font-weight:700; font-size:clamp(1.5rem,2.6vw,2.1rem); color:var(--lima); }
 .stat-label{ font-size:11.5px; color:var(--muted); margin-top:6px; letter-spacing:0.01em; }
 @media (max-width:640px){
   .stat-pill{ grid-template-columns:1fr 1fr; }
@@ -435,29 +435,6 @@ h1 .fade{ color:var(--muted-2); }
 
 export default function Home() {
   useEffect(() => {
-    function animateCount(el: Element, target: number) {
-      const dur = 1400, start = performance.now();
-      const dataset = (el as HTMLElement).dataset;
-      const prefix = dataset.prefix || '', suffix = dataset.suffix || '';
-      function step(now: number) {
-        const p = Math.min((now - start) / dur, 1);
-        const eased = 1 - Math.pow(1 - p, 3);
-        const val = Math.round(target * eased);
-        el.textContent = prefix + val + suffix;
-        if (p < 1) requestAnimationFrame(step);
-      }
-      requestAnimationFrame(step);
-    }
-    const statEls = document.querySelectorAll('.stat-pill [data-count]');
-    const statObserver = new IntersectionObserver((entries) => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          animateCount(entry.target, parseInt((entry.target as HTMLElement).dataset.count || '0', 10));
-          statObserver.unobserve(entry.target);
-        }
-      });
-    }, { threshold: 0.6 });
-    statEls.forEach(el => statObserver.observe(el));
 
     const io = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
@@ -620,13 +597,13 @@ export default function Home() {
         </div>
 
         <div className="stat-pill">
-          <div className="stat-cell"><div className="stat-num mono" data-count="90" data-suffix="s">0</div><div className="stat-label">y lo tienes</div></div>
+          <div className="stat-cell"><div className="stat-num">90s</div><div className="stat-label">y lo tienes</div></div>
           <span className="stat-divider"></span>
-          <div className="stat-cell"><div className="stat-num mono" data-count="3" data-suffix="">0</div><div className="stat-label">ángulos de análisis</div></div>
+          <div className="stat-cell"><div className="stat-num">3</div><div className="stat-label">ángulos de análisis</div></div>
           <span className="stat-divider"></span>
-          <div className="stat-cell"><div className="stat-num mono" data-count="1" data-suffix="">0</div><div className="stat-label">Plan de acción</div></div>
+          <div className="stat-cell"><div className="stat-num">1</div><div className="stat-label">Plan de acción</div></div>
           <span className="stat-divider"></span>
-          <div className="stat-cell"><div className="stat-num mono">+12</div><div className="stat-label">métricas analizadas</div></div>
+          <div className="stat-cell"><div className="stat-num">+12</div><div className="stat-label">métricas analizadas</div></div>
         </div>
       </section>
 
