@@ -842,8 +842,53 @@ function AuditoriaFormContent() {
       if (fetchedData) {
         setN8nReport(fetchedData);
         setIsUnlocked(true);
+
+        // Fire-and-forget: register beta access in MicroApps portal
+        try {
+          const rd = fetchedData.report_data || {};
+          const portalBody = {
+            user_email:    String(formData.email || fetchedData.email || finalEmail),
+            property_name: String(formData.property_name || 'Propiedad'),
+            city:          String(formData.city || ''),
+            country:       String(formData.country || ''),
+            platform:      'airlocarc',
+            scores:        rd.cazafugas?.fortalezas ?? [],
+            metrics: {
+              score_salud_operativa:       rd.tacometro?.score_final ?? null,
+              estado_operativo:            rd.cabecera?.risk_level ?? null,
+              potencial_economico_mensual: rd.guardian_conclusion?.potencial_economico_identificado ?? null,
+              potencial_economico_anual:   rd.guardian_conclusion?.potencial_economico_identificado != null
+                                             ? rd.guardian_conclusion.potencial_economico_identificado * 12
+                                             : null,
+              break_even_noches:           rd.cabecera?.break_even_nights ?? null,
+              colchon_operativo_noches:    rd.cabecera?.margin_of_safety ?? null,
+              expense_ratio_pct:           rd.datos_entrada?.expense_ratio ?? null,
+              adr_actual:                  rd.datos_entrada?.avg_price ?? null,
+              adr_zona:                    rd.posicionamiento_precio?.adr_mercado ?? null,
+              adr_gap_pct:                 rd.posicionamiento_precio?.gap_pct ?? null,
+              ingreso_neto:                rd.datos_entrada?.net_income ?? null,
+              facturacion_bruta:           rd.datos_entrada?.gross_income ?? null,
+              costos_totales:              rd.datos_entrada?.total_costs ?? null,
+              noches_vendidas:             rd.datos_entrada?.occupied_nights ?? null,
+              limitante_principal:         rd.guardian_conclusion?.limitante_principal ?? null,
+            },
+            diagnosis:   rd.guardian_conclusion?.mensaje ?? '',
+            action_plan: rd.estratega?.intervenciones ?? [],
+            access_type: 'beta_code',
+          };
+
+          fetch('/api/portal-webhook', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(portalBody),
+          }).catch((err: any) => {
+            console.error('[portal-webhook] error:', err);
+          });
+        } catch (err) {
+          console.error('[portal-webhook] payload build error:', err);
+        }
       }
-      
+
     } catch (error: any) {
       console.error("ERROR EN EL ENVÍO A N8N PREMIUM:", error);
     } finally {
