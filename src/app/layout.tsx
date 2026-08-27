@@ -13,9 +13,28 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const SITE_TITLE = 'AIRLOCAL | Inteligencia operativa para BNB';
+const SITE_DESC =
+  'Descubre si tu BNB realmente genera ganancias o solo ingresos. Analiza la salud de tu operación, detecta fugas y decide qué priorizar.';
+const SITE_URL = 'https://propiqdata.com/';
+const OG_IMAGE = 'https://propiqdata.com/assets/product-modules.webp';
+
 export const metadata: Metadata = {
-  title: "AIRLOCAL™ Risk Radar — Inteligencia operativa para tu BNB",
-  description: "Descubre si tu propiedad de alquiler vacacional realmente genera ganancias. Diagnóstico operativo en 90 segundos.",
+  title: SITE_TITLE,
+  description: SITE_DESC,
+  openGraph: {
+    title: SITE_TITLE,
+    description: SITE_DESC,
+    url: SITE_URL,
+    type: 'website',
+    images: [{ url: OG_IMAGE, width: 1200, height: 630, alt: SITE_TITLE }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: SITE_TITLE,
+    description: SITE_DESC,
+    images: [OG_IMAGE],
+  },
 };
 
 export default function RootLayout({

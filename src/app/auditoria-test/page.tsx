@@ -333,6 +333,16 @@ function AuditoriaFormContent() {
     document.body.setAttribute('data-auditoria-step', String(currentStep));
     return () => { document.body.removeAttribute('data-auditoria-step'); };
   }, [currentStep]);
+
+  // Sincroniza el Browser Back/Forward con los pasos del funnel
+  useEffect(() => {
+    const handlePop = (e: PopStateEvent) => {
+      const step = e.state?.auditStep;
+      if (typeof step === 'number') setCurrentStep(step);
+    };
+    window.addEventListener('popstate', handlePop);
+    return () => window.removeEventListener('popstate', handlePop);
+  }, []);
   const [betaEmail, setBetaEmail] = useState('');
   const [isBetaSubmitted, setIsBetaSubmitted] = useState(false);
   const [isBetaModalOpen, setIsBetaModalOpen] = useState(false);
@@ -342,6 +352,7 @@ function AuditoriaFormContent() {
   const [validationMsg, setValidationMsg] = useState('');
   const [accessCode, setAccessCode] = useState('');
   const [checkoutError, setCheckoutError] = useState('');
+  const [isRetryingReport, setIsRetryingReport] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
 
   interface FormDataState {
@@ -715,11 +726,14 @@ function AuditoriaFormContent() {
         return;
       }
     }
-    setCurrentStep(prev => Math.min(prev + 1, 4));
+    const newStep = Math.min(currentStep + 1, 4);
+    window.history.pushState({ auditStep: newStep }, '');
+    if (currentStep === 1) (window as any).gtag?.('event', 'diagnostico_iniciado');
+    setCurrentStep(newStep);
   };
 
   const prevStep = () => {
-    setCurrentStep(prev => Math.max(prev - 1, 1));
+    window.history.back();
   };
 
   const handleOpenCheckout = () => {
@@ -739,25 +753,67 @@ function AuditoriaFormContent() {
     setIsCheckoutModalOpen(true);
     setAccessCode('');
     setCheckoutError('');
+    (window as any).gtag?.('event', 'modal_pago_abierto');
   };
 
-  const handleConfirmCheckout = () => {
-    if (accessCode.toUpperCase() === 'BETA2026') {
-      setIsCheckoutModalOpen(false);
-      handlePremiumSubmit();
-    } else {
+  const handleConfirmCheckout = async () => {
+    if (accessCode.toUpperCase() !== 'BETA2026') {
       setCheckoutError('Código inválido. Intenta de nuevo.');
+      (window as any).gtag?.('event', 'codigo_invalido');
+      return;
     }
+    (window as any).gtag?.('event', 'beta2026_confirmado');
+
+    if (!n8nReport?.assessment_code) {
+      setIsRetryingReport(true);
+      setCheckoutError('');
+      try {
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        if (supabaseClient) {
+          const { data } = await supabaseClient
+            .from('reports')
+            .select('*')
+            .eq('email', formData.email.trim())
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .single() as any;
+          if (data?.assessment_code) {
+            let parsed = { ...data };
+            try {
+              if (parsed.report_data) {
+                let raw = parsed.report_data;
+                if (typeof raw === 'string') raw = JSON.parse(raw);
+                if (typeof raw === 'string') raw = JSON.parse(raw);
+                if (raw?.report_data && !raw.free) raw = raw.report_data;
+                parsed = { ...parsed, ...raw };
+              }
+            } catch {}
+            setN8nReport(parsed);
+            setIsRetryingReport(false);
+            setIsCheckoutModalOpen(false);
+            handlePremiumSubmit(parsed);
+            return;
+          }
+        }
+      } catch {}
+      setIsRetryingReport(false);
+      setCheckoutError('Tu diagnóstico todavía se está generando. Espera unos segundos y vuelve a intentarlo.');
+      return;
+    }
+
+    setIsCheckoutModalOpen(false);
+    handlePremiumSubmit();
   };
 
-  const handlePremiumSubmit = async () => {
+  const handlePremiumSubmit = async (reportOverride?: any) => {
     setIsSubmitting(true);
     setIsFetchingReport(true);
     setErrorMessage('');
 
+    const activeReport = reportOverride ?? n8nReport;
     const finalEmail = formData.email.trim() || 'malenasoloads@gmail.com';
-    const assessmentCode = n8nReport?.assessment_code || '';
-    const reportUuid = n8nReport?.id || '';
+    const assessmentCode = activeReport?.assessment_code || '';
+    const reportUuid = activeReport?.id || '';
 
     const payload: Record<string, any> = {
       property_name: String(formData.property_name),
@@ -834,6 +890,7 @@ function AuditoriaFormContent() {
             }
             fetchedData = parsedObj;
             console.log("Reporte Premium obtenido exitosamente:", fetchedData);
+            (window as any).gtag?.('event', 'reporte_premium_entregado');
             break;
           }
         }
@@ -1019,6 +1076,7 @@ function AuditoriaFormContent() {
       return;
     }
 
+    (window as any).gtag?.('event', 'email_capturado');
     setIsSubmitting(true);
     setErrorMessage('');
 
@@ -1061,6 +1119,7 @@ function AuditoriaFormContent() {
       });
 
       // Avanzamos el paso y mostramos el estado de carga del reporte
+      window.history.pushState({ auditStep: 4 }, '');
       setCurrentStep(4);
       setIsFetchingReport(true);
       const submitTime = new Date(Date.now() - 30000).toISOString(); // 30s buffer for safety
@@ -2358,20 +2417,15 @@ function AuditoriaFormContent() {
           <p className="text-base md:text-lg text-zinc-400 max-w-lg mx-auto leading-relaxed mb-10">
             Responde unas preguntas sobre tu operación y en 90 segundos verás exactamente dónde está tu dinero — y cuánto podrías estar dejando sobre la mesa.
           </p>
-          <div className="flex flex-col gap-4 mb-10 text-left w-full max-w-sm mx-auto">
-            {[
-              { img: '/assets/icon-guardian.webp', text: 'Detecta si tu operación es saludable, vulnerable o crítica' },
-              { img: '/assets/icon-cazafugas.webp', text: 'Analiza tus métricas frente al benchmark del mercado' },
-              { img: '/assets/icon-estratega.webp', text: 'Prioriza la intervención con mayor impacto económico' },
-            ].map(({ img, text }) => (
-              <div key={text} className="flex items-center gap-4 text-zinc-300 text-sm">
-                <img src={img} alt="" style={{ width: 48, height: 48, objectFit: 'contain', flexShrink: 0 }} />
-                <span>{text}</span>
-              </div>
-            ))}
+          <div className="flex justify-center mb-10 w-full">
+            <img
+              src="/assets/Product_module_transparent.webp"
+              alt="El Guardián · El Cazafugas · El Estratega"
+              style={{ width: 'min(100%, 1150px)', height: 'auto', display: 'block' }}
+            />
           </div>
           <button
-            onClick={() => setCurrentStep(1)}
+            onClick={() => { window.history.replaceState({ auditStep: 1 }, ''); setCurrentStep(1); }}
             className="inline-flex items-center gap-3 bg-[#00D1B2] hover:bg-[#00bfa3] text-[#0B0B0C] font-bold text-base px-8 py-4 rounded-full transition-all duration-300 hover:scale-105 shadow-[0_0_40px_rgba(0,209,178,0.3)]"
           >
             Empezar diagnóstico
@@ -2487,6 +2541,19 @@ function AuditoriaFormContent() {
           </div>
         ) : (
         <div className="space-y-8 animate-in fade-in zoom-in-95 duration-500 text-left w-full">
+
+            {/* ENCABEZADO DIAGNÓSTICO EXPRESS */}
+            <div className="text-center flex flex-col items-center gap-2 pb-2">
+              <span className="text-[#00D1B2] text-[10px] md:text-xs font-extrabold uppercase tracking-[0.2em]">
+                DIAGNÓSTICO EXPRESS
+              </span>
+              <h2 className="text-white text-xl md:text-3xl font-black tracking-tight leading-tight max-w-xl">
+                La salud operativa de tu propiedad, en números.
+              </h2>
+              <p className="text-zinc-400 text-sm md:text-base max-w-md leading-relaxed">
+                Una lectura rápida de ocupación, tarifa, margen y nivel de riesgo.
+              </p>
+            </div>
 
             {/* CABECERA DE RESUMEN INICIAL */}
             <div className="w-full bg-gradient-to-b from-[#1A1D23] to-[#0B0C10] border border-[#2E333C]/40 rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] p-8 mb-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 transition-all hover:border-zinc-700/50">
@@ -2929,7 +2996,7 @@ function AuditoriaFormContent() {
                   If the report is not unlocked, we apply blur, low opacity, and prevent interactions.
                 */}
                 <div className={`transition-all duration-500 space-y-8 ${
-                  !isUnlocked ? 'filter blur-[7px] pointer-events-none select-none opacity-25' : ''
+                  !isUnlocked ? 'filter blur-[7px] pointer-events-none select-none opacity-25 max-h-[1100px] overflow-hidden' : ''
                 }`}>
                   <div className="w-full pt-8 mt-12 mb-8 border-t border-white/5 flex flex-col items-center gap-1 text-center select-none">
                     <span className="text-[10px] font-black tracking-[0.3em] text-white uppercase">
@@ -3710,39 +3777,39 @@ function AuditoriaFormContent() {
           </div>
           {!isUnlocked && (
             <div className="absolute inset-x-0 top-12 flex flex-col items-center justify-start z-30 px-4">
-              <div className="w-full max-w-2xl text-center flex flex-col items-center gap-6 py-10 backdrop-blur-sm">
+              <div className="w-full max-w-3xl text-center flex flex-col items-center gap-7 py-12 backdrop-blur-sm">
 
-                {/* Badge */}
-                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#00D1B2]/20 bg-[#00D1B2]/10 text-[#00D1B2] text-[10px] font-bold tracking-widest uppercase">
-                  🔒 CONTENIDO EXCLUSIVO
+                {/* Headline principal */}
+                <div className="flex flex-col gap-3 mt-2">
+                  <p className="text-zinc-300 text-base md:text-lg font-semibold tracking-wide">
+                    La Auditoría EXPRESS te mostró parte del problema.
+                  </p>
+                  <div className="flex flex-col gap-1">
+                    <p className="text-white text-2xl md:text-4xl font-black leading-tight tracking-tight">
+                      Descubre qué está afectando realmente tu rentabilidad.
+                    </p>
+                    <p className="text-[#00D1B2] text-2xl md:text-4xl font-black leading-tight tracking-tight">
+                      Y qué deberías priorizar primero.
+                    </p>
+                  </div>
                 </div>
 
-                {/* Dynamic headline */}
-                <h3 className="text-2xl md:text-3xl font-black text-white uppercase tracking-tight max-w-lg leading-tight">
-                  ENCONTRAMOS +${formattedHeroMensual} USD/MES ATRAPADOS.
-                </h3>
+                {/* Imagen de módulos — ancha, sin contenedor, fondo transparente */}
+                <img
+                  src="/assets/Product_module_transparent.webp"
+                  alt="El Guardián · El Cazafugas · El Estratega"
+                  style={{ width: 'min(100%, 1150px)', height: 'auto', display: 'block' }}
+                />
 
-                {/* Sub headline */}
-                <div className="flex flex-col gap-1">
-                  <p className="text-zinc-300 text-sm md:text-base font-semibold">La Auditoría EXPRESS te mostró el problema.</p>
-                  <p className="text-[#00D1B2] text-sm md:text-base font-bold">La Auditoría Operativa te da el plan exacto.</p>
+                {/* Copy bajo la imagen */}
+                <div className="flex flex-col items-center gap-2 text-center">
+                  <h4 className="text-white text-lg md:text-xl font-black tracking-tight">Completa tu Diagnóstico Operativo</h4>
+                  <p className="text-zinc-400 text-sm md:text-base max-w-sm leading-relaxed">
+                    Detecta fugas. Prioriza acciones.
+                  </p>
                 </div>
 
-                {/* Icon rows */}
-                <div className="flex flex-col gap-5 w-full max-w-xs text-left">
-                  {([
-                    { img: '/assets/icon-guardian.webp', q: '¿es viable seguir así?' },
-                    { img: '/assets/icon-cazafugas.webp', q: '¿dónde exactamente se pierde?' },
-                    { img: '/assets/icon-estratega.webp', q: '¿qué mueves primero?' },
-                  ] as { img: string; q: string }[]).map(({ img, q }) => (
-                    <div key={q} className="flex items-center gap-4">
-                      <img src={img} alt="" style={{ width: 48, height: 48, objectFit: 'contain', flexShrink: 0 }} />
-                      <span className="text-zinc-200 text-sm font-semibold">{q}</span>
-                    </div>
-                  ))}
-                </div>
-
-                {/* CTA + microcopy + share */}
+                {/* CTA + microcopy */}
                 <div className="flex flex-col items-center gap-3 w-full">
                   <button
                     type="button"
@@ -3754,38 +3821,39 @@ function AuditoriaFormContent() {
                     }}
                     className="w-full max-w-md bg-[#00D1B2] hover:bg-[#00D1B2]/90 text-[#0B0B0C] font-extrabold text-xs md:text-sm uppercase tracking-widest px-8 py-4 rounded-full shadow-[0_0_30px_rgba(0,209,178,0.35)] transition-all duration-300 hover:scale-[1.02] font-sans"
                   >
-                    VER MI DIAGNÓSTICO OPERATIVO →
+                    COMPLETAR MI DIAGNÓSTICO →
                   </button>
 
                   <span className="text-[9px] font-extrabold text-neutral-500 uppercase tracking-widest">
-                    ACCESO INSTANTÁNEO · DIAGNÓSTICO 100% PERSONALIZADO
+                    ACCESO INSTANTÁNEO · 100% PERSONALIZADO
                   </span>
-
-                  {n8nReport?.id && (
-                    <div className="mt-3 flex flex-col items-center gap-2">
-                      <span className="text-zinc-500 text-xs">¿Quieres que otra persona sepa cómo está su BNB?</span>
-                      <button
-                        type="button"
-                        onClick={async () => {
-                          const url = `${window.location.origin}/r/${n8nReport.id}`;
-                          try {
-                            if (navigator.share) {
-                              await navigator.share({ title: 'Mi Diagnóstico Express · AIRLOCAL', url });
-                            } else {
-                              await navigator.clipboard.writeText(url);
-                              setLinkCopied(true);
-                              setTimeout(() => setLinkCopied(false), 3000);
-                            }
-                          } catch {}
-                        }}
-                        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border border-[#00D1B2]/30 bg-[#00D1B2]/5 hover:bg-[#00D1B2]/15 text-[#00D1B2] text-xs font-bold uppercase tracking-wider transition-all duration-200"
-                      >
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
-                        {linkCopied ? 'Enlace copiado ✓' : 'Compartir mi resultado'}
-                      </button>
-                    </div>
-                  )}
                 </div>
+
+                {/* Separador + compartir */}
+                {n8nReport?.id && (
+                  <div className="w-full flex flex-col items-center gap-3 mt-4 pt-6 border-t border-white/10">
+                    <span className="text-zinc-500 text-xs">¿Conoces a alguien que gestiona un BNB?</span>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        const url = `${window.location.origin}/r/${n8nReport.id}`;
+                        try {
+                          if (navigator.share) {
+                            await navigator.share({ title: 'Mi Diagnóstico Express · AIRLOCAL', url });
+                          } else {
+                            await navigator.clipboard.writeText(url);
+                            setLinkCopied(true);
+                            setTimeout(() => setLinkCopied(false), 3000);
+                          }
+                        } catch {}
+                      }}
+                      className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border border-[#00D1B2]/30 bg-[#00D1B2]/5 hover:bg-[#00D1B2]/15 text-[#00D1B2] text-xs font-bold uppercase tracking-wider transition-all duration-200"
+                    >
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+                      {linkCopied ? 'Enlace copiado ✓' : 'Compartir mi resultado'}
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -4427,13 +4495,24 @@ function AuditoriaFormContent() {
                 <button
                   type="button"
                   onClick={handleConfirmCheckout}
+                  disabled={isRetryingReport}
                   className={`w-full font-black text-sm uppercase tracking-widest py-4 rounded-full transition-all flex items-center justify-center gap-2 mt-2 ${
-                    accessCode.toUpperCase() === 'BETA2026'
-                      ? 'bg-[#FFC439] hover:bg-[#F2B224] text-[#003087] shadow-[0_4px_14px_rgba(255,196,57,0.4)] hover:scale-[1.01]'
-                      : 'bg-zinc-300 text-zinc-500 cursor-not-allowed opacity-75'
+                    isRetryingReport
+                      ? 'bg-zinc-300 text-zinc-500 cursor-not-allowed opacity-75'
+                      : accessCode.toUpperCase() === 'BETA2026'
+                        ? 'bg-[#FFC439] hover:bg-[#F2B224] text-[#003087] shadow-[0_4px_14px_rgba(255,196,57,0.4)] hover:scale-[1.01]'
+                        : 'bg-zinc-300 text-zinc-500 cursor-not-allowed opacity-75'
                   }`}
                 >
-                  Confirmar y acceder
+                  {isRetryingReport ? (
+                    <>
+                      <svg className="animate-spin h-4 w-4 text-zinc-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                      </svg>
+                      Verificando tu diagnóstico…
+                    </>
+                  ) : 'Confirmar y acceder'}
                 </button>
 
                 {/* Card logos replica from image */}
@@ -4559,8 +4638,9 @@ export default function AuditoriaTestPage() {
               <span style={{fontSize:12.5,color:'#98a190'}}>AIRLOCAL™ by propiqdata.com</span>
             </div>
             <div style={{display:'flex',gap:22,fontSize:12.5}}>
-              <a href="#" style={{color:'#98a190',textDecoration:'none'}}>Términos</a>
-              <a href="#" style={{color:'#98a190',textDecoration:'none'}}>Privacidad</a>
+              <a href="/terms" style={{color:'#98a190',textDecoration:'none'}}>Términos</a>
+              <a href="/privacy" style={{color:'#98a190',textDecoration:'none'}}>Privacidad</a>
+              <a href="/refund-policy" style={{color:'#98a190',textDecoration:'none'}}>Reembolso</a>
               <a href="mailto:soporte@propiqdata.com" style={{color:'#98a190',textDecoration:'none'}}>soporte@propiqdata.com</a>
             </div>
           </div>

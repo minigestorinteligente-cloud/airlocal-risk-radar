@@ -25,13 +25,13 @@ function isDisposableEmail(email: string): boolean {
   return !!domain && DISPOSABLE_DOMAINS.has(domain);
 }
 
-function getEstadoConfig(estado: string) {
+function getEstadoBadge(estado: string): { label: string; bg: string; border: string; text: string } {
   const s = (estado || '').toUpperCase();
   if (s.includes('CRITICO') || s.includes('CRÍTICO') || s.includes('HIGH'))
-    return { label: 'CRÍTICO', color: '#E53E3E', emoji: '🔴' };
+    return { label: 'CRÍTICO',    bg: '#1F0808', border: '#C84A4A', text: '#C84A4A' };
   if (s.includes('VULNERABLE') || s.includes('MEDIUM') || s.includes('TENSO'))
-    return { label: 'VULNERABLE', color: '#D69E2E', emoji: '🟡' };
-  return { label: 'SALUDABLE', color: '#38A169', emoji: '🟢' };
+    return { label: 'VULNERABLE', bg: '#2A2308', border: '#C89B4A', text: '#C89B4A' };
+  return   { label: 'SALUDABLE', bg: '#0A1A13', border: '#3EA293', text: '#3EA293' };
 }
 
 function buildEmailHtml(data: {
@@ -41,107 +41,148 @@ function buildEmailHtml(data: {
   score: number;
   email: string;
 }): string {
-  const { property_name, estado, hero_mensual, score } = data;
-  const estadoConfig = getEstadoConfig(estado);
+  const { property_name, estado, hero_mensual } = data;
   const propName = property_name || 'Tu Propiedad';
-  const potencial = hero_mensual > 0 ? `+$${hero_mensual.toLocaleString()} USD/mes` : 'Potencial por calcular';
+  const badge = getEstadoBadge(estado);
+  const potentialAmount = hero_mensual > 0 ? `$${hero_mensual.toLocaleString('es')}` : '$0';
+  const auditUrl = 'https://propiqdata.com/auditoria-test';
 
   return `<!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Tu Diagnóstico AIRLOCAL</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AIRLOCAL — Tu Auditoría Operativa te espera</title>
 </head>
-<body style="margin:0;padding:0;background:#0B0C10;font-family:'Helvetica Neue',Arial,sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#0B0C10;padding:40px 20px;">
-    <tr><td align="center">
-      <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;">
+<body style="margin:0; padding:0; background-color:#0D0F0E; font-family: 'Inter', Arial, Helvetica, sans-serif;">
 
-        <!-- HEADER -->
-        <tr><td style="padding-bottom:32px;text-align:center;">
-          <span style="font-size:13px;font-weight:900;letter-spacing:4px;color:#00D1B2;text-transform:uppercase;">AIRLOCAL™</span>
-          <span style="font-size:13px;font-weight:400;color:#4A5568;letter-spacing:2px;"> | INTELIGENCIA OPERATIVA</span>
-        </td></tr>
+<!-- Preheader -->
+<div style="display:none; max-height:0; overflow:hidden; opacity:0;">
+  ${propName} sigue perdiendo ${potentialAmount} USD/mes — el desglose completo te está esperando.
+</div>
 
-        <!-- HERO -->
-        <tr><td style="background:#111318;border:1px solid #1E2330;border-radius:20px;padding:40px 36px 36px;text-align:center;margin-bottom:24px;">
-          <p style="margin:0 0 8px;font-size:11px;font-weight:700;letter-spacing:3px;color:#4A5568;text-transform:uppercase;">DIAGNÓSTICO OPERATIVO</p>
-          <h1 style="margin:0 0 6px;font-size:28px;font-weight:900;color:#FFFFFF;letter-spacing:-0.5px;">${propName}</h1>
-          <p style="margin:0 0 28px;font-size:13px;color:#4A5568;">Tu diagnóstico express está listo</p>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#0D0F0E; padding: 32px 16px;">
+  <tr>
+    <td align="center">
+      <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px; width:100%;">
 
-          <!-- Estado badge -->
-          <div style="display:inline-block;background:${estadoConfig.color}18;border:1px solid ${estadoConfig.color}44;border-radius:100px;padding:10px 24px;margin-bottom:28px;">
-            <span style="font-size:13px;font-weight:900;color:${estadoConfig.color};letter-spacing:2px;text-transform:uppercase;">
-              ${estadoConfig.emoji} ESTADO: ${estadoConfig.label}
-            </span>
-          </div>
+        <!-- HEADER / LOGO -->
+        <tr>
+          <td style="padding: 8px 8px 32px 8px;">
+            <table role="presentation" cellpadding="0" cellspacing="0">
+              <tr>
+                <td style="font-family: 'Montserrat', Arial, sans-serif; font-weight:900; font-size:20px; color:#FFFFFF; letter-spacing: 0.5px;">
+                  AIRLOCAL<span style="color:#3EA293;">™</span>
+                </td>
+              </tr>
+              <tr>
+                <td style="font-family: 'Inter', Arial, sans-serif; font-size:11px; color:#8A8D8C; letter-spacing: 1.5px; text-transform:uppercase; padding-top:2px;">
+                  Inteligencia Operativa &nbsp;|&nbsp; BNB
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
 
-          <!-- Potencial -->
-          <div style="background:#0B0C10;border:1px solid #1E2330;border-radius:16px;padding:24px;margin-bottom:28px;">
-            <p style="margin:0 0 4px;font-size:10px;font-weight:700;letter-spacing:3px;color:#4A5568;text-transform:uppercase;">POTENCIAL ECONÓMICO IDENTIFICADO</p>
-            <p style="margin:0;font-size:36px;font-weight:900;color:#00D1B2;letter-spacing:-1px;">${potencial}</p>
-            <p style="margin:4px 0 0;font-size:12px;color:#4A5568;">estimado inicial sin desglose de costos</p>
-          </div>
+        <!-- TARJETA PRINCIPAL -->
+        <tr>
+          <td style="background-color:#15181A; border:1px solid #2A2D2C; border-radius:16px; padding:40px 32px;">
 
-          <!-- Score -->
-          <div style="background:#0B0C10;border:1px solid #1E2330;border-radius:16px;padding:20px;margin-bottom:32px;">
-            <p style="margin:0 0 4px;font-size:10px;font-weight:700;letter-spacing:3px;color:#4A5568;text-transform:uppercase;">SCORE DE SALUD OPERATIVA</p>
-            <p style="margin:0;font-size:32px;font-weight:900;color:#FFFFFF;">${score}<span style="font-size:16px;color:#4A5568;font-weight:400;">/100</span></p>
-          </div>
-
-          <!-- CTA -->
-          <p style="margin:0 0 16px;font-size:13px;color:#A0AEC0;line-height:1.6;">
-            Tu diagnóstico gratuito te mostró el panorama general.<br>
-            El análisis completo revela <strong style="color:#FFFFFF;">exactamente dónde se va el dinero</strong> y qué mover primero.
-          </p>
-
-          <div style="background:#161B26;border:1px solid #2D3748;border-radius:12px;padding:16px;margin-bottom:24px;">
-            <p style="margin:0 0 6px;font-size:11px;font-weight:700;letter-spacing:2px;color:#4A5568;text-transform:uppercase;">CÓDIGO DE ACCESO BETA</p>
-            <p style="margin:0;font-size:22px;font-weight:900;color:#00D1B2;letter-spacing:4px;">BETA2026</p>
-            <p style="margin:4px 0 0;font-size:11px;color:#4A5568;">Acceso ilimitado · Sin costo durante el beta</p>
-          </div>
-
-          <a href="https://propiqdata.com/auditoria-test" style="display:inline-block;background:linear-gradient(135deg,#00D1B2,#00FFD1);color:#0B0C10;font-size:13px;font-weight:900;letter-spacing:2px;text-transform:uppercase;padding:16px 36px;border-radius:100px;text-decoration:none;">
-            Ver mi análisis completo →
-          </a>
-        </td></tr>
-
-        <!-- SEPARADOR -->
-        <tr><td style="height:24px;"></td></tr>
-
-        <!-- LO QUE INCLUYE -->
-        <tr><td style="background:#111318;border:1px solid #1E2330;border-radius:20px;padding:32px 36px;">
-          <p style="margin:0 0 20px;font-size:11px;font-weight:700;letter-spacing:3px;color:#4A5568;text-transform:uppercase;">LO QUE VAS A VER</p>
-          ${[
-            ['📊','Radiografía operativa','Benchmark vs. propiedades similares'],
-            ['🔍','Fugas detectadas','Rubros exactos donde se pierde dinero'],
-            ['⚡','Plan de acción priorizado','Qué mover primero para recuperar rentabilidad'],
-            ['📈','Proyección financiera','Escenarios con y sin intervención'],
-          ].map(([icon, title, desc]) => `
-          <div style="display:flex;align-items:flex-start;gap:16px;margin-bottom:20px;">
-            <span style="font-size:20px;flex-shrink:0;">${icon}</span>
-            <div>
-              <p style="margin:0 0 2px;font-size:13px;font-weight:700;color:#FFFFFF;">${title}</p>
-              <p style="margin:0;font-size:12px;color:#4A5568;">${desc}</p>
+            <!-- Label superior -->
+            <div style="font-family:'Inter', Arial, sans-serif; font-size:11px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:#3EA293; text-align:center; margin-bottom:12px;">
+              Diagnóstico Operativo
             </div>
-          </div>`).join('')}
-        </td></tr>
+
+            <!-- Nombre propiedad -->
+            <div style="font-family:'Montserrat', Arial, sans-serif; font-weight:800; font-size:28px; line-height:1.2; color:#FFFFFF; text-align:center; margin-bottom:24px;">
+              ${propName}
+            </div>
+
+            <!-- Badge de estado (dinámico) -->
+            <table role="presentation" cellpadding="0" cellspacing="0" align="center" style="margin: 0 auto 28px auto;">
+              <tr>
+                <td style="background-color:${badge.bg}; border:1px solid ${badge.border}; border-radius:24px; padding:10px 20px;">
+                  <span style="font-family:'Inter', Arial, sans-serif; font-weight:700; font-size:12px; letter-spacing:1.5px; color:${badge.text};">
+                    ● ESTADO: ${badge.label}
+                  </span>
+                </td>
+              </tr>
+            </table>
+
+            <!-- Copy principal -->
+            <div style="font-family:'Inter', Arial, sans-serif; font-size:15px; line-height:1.6; color:#C9CCCB; text-align:center; margin-bottom:28px;">
+              Tu diagnóstico ya lo dijo: <strong style="color:#FFFFFF;">${propName}</strong> está dejando dinero sobre la mesa.
+              Ese número es una <strong style="color:#FFFFFF;">estimación inicial, sin desglose de costos.</strong>
+            </div>
+
+            <!-- Caja de impacto económico -->
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#0D1F1B; border:1px solid #3EA293; border-radius:12px; margin-bottom:28px;">
+              <tr>
+                <td style="padding:24px; text-align:center;">
+                  <div style="font-family:'Inter', Arial, sans-serif; font-size:10px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:#3EA293; margin-bottom:8px;">
+                    Potencial Económico Identificado
+                  </div>
+                  <div style="font-family:'JetBrains Mono', 'Courier New', monospace; font-weight:700; font-size:32px; color:#3EA293;">
+                    +${potentialAmount} USD/mes
+                  </div>
+                </td>
+              </tr>
+            </table>
+
+            <!-- Lista de lo que falta ver -->
+            <div style="font-family:'Inter', Arial, sans-serif; font-size:14px; line-height:1.9; color:#C9CCCB; margin-bottom:28px; padding-left:4px;">
+              <div style="color:#8A8D8C; font-size:11px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; margin-bottom:10px;">Todavía no sabes</div>
+              — Dónde exactamente se está yendo ese dinero<br>
+              — Qué tan lejos estás de entrar en pérdida<br>
+              — Qué mover primero para recuperarlo
+            </div>
+
+            <!-- CTA -->
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+              <tr>
+                <td align="center">
+                  <a href="${auditUrl}" target="_blank" style="display:inline-block; background-color:#92E83F; color:#0D0F0E; font-family:'Montserrat', Arial, sans-serif; font-weight:800; font-size:14px; letter-spacing:0.5px; text-decoration:none; padding:16px 32px; border-radius:8px;">
+                    COMPLETAR MI AUDITORÍA OPERATIVA →
+                  </a>
+                </td>
+              </tr>
+            </table>
+
+            <div style="font-family:'Inter', Arial, sans-serif; font-size:12px; color:#6B6E6D; text-align:center; margin-top:20px;">
+              Cada mes que pasa sin corregirlo, ese margen se sigue reduciendo.
+            </div>
+
+          </td>
+        </tr>
 
         <!-- FOOTER -->
-        <tr><td style="padding:28px 0 0;text-align:center;">
-          <p style="margin:0 0 8px;font-size:11px;color:#2D3748;">
-            AIRLOCAL™ by <a href="https://propiqdata.com" style="color:#00D1B2;text-decoration:none;">propiqdata.com</a>
-          </p>
-          <p style="margin:0;font-size:10px;color:#1E2330;">
-            Recibiste este email porque completaste un diagnóstico en propiqdata.com.<br>
-            © 2026 AIRLOCAL. Todos los derechos reservados.
-          </p>
-        </td></tr>
+        <tr>
+          <td style="padding: 28px 8px 8px 8px;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+              <tr>
+                <td style="font-family:'Inter', Arial, sans-serif; font-size:12px; color:#6B6E6D;">
+                  AIRLOCAL™ by propiqdata.com
+                </td>
+                <td align="right" style="font-family:'Inter', Arial, sans-serif; font-size:12px; color:#6B6E6D;">
+                  <a href="https://propiqdata.com/terms" style="color:#6B6E6D; text-decoration:none;">Términos</a>&nbsp;&nbsp;
+                  <a href="https://propiqdata.com/privacy" style="color:#6B6E6D; text-decoration:none;">Privacidad</a>&nbsp;&nbsp;
+                  <a href="mailto:soporte@propiqdata.com" style="color:#6B6E6D; text-decoration:none;">Soporte</a>
+                </td>
+              </tr>
+              <tr>
+                <td colspan="2" style="font-family:'Inter', Arial, sans-serif; font-size:11px; color:#4A4C4B; padding-top:12px;">
+                  © 2026 AIRLOCAL
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
 
       </table>
-    </td></tr>
-  </table>
+    </td>
+  </tr>
+</table>
+
 </body>
 </html>`;
 }
@@ -179,7 +220,7 @@ export async function POST(req: Request) {
     const { error: resendError } = await resend.emails.send({
       from: 'AIRLOCAL <soporte@propiqdata.com>',
       to: email,
-      subject: `${property_name || 'Tu propiedad'} — tu diagnóstico AIRLOCAL está listo`,
+      subject: `${property_name || 'Tu propiedad'} — encontramos +${hero_mensual > 0 ? `$${Number(hero_mensual).toLocaleString('es')}` : '$0'} USD/mes atrapados`,
       html: buildEmailHtml({ property_name, estado, hero_mensual: Number(hero_mensual) || 0, score: Number(score) || 0, email }),
     });
 

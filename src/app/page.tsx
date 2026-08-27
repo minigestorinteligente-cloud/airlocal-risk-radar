@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import DiagnosticShowcase from '../components/DiagnosticShowcase';
 
 const CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800;900&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;700&display=swap');
@@ -342,7 +343,7 @@ h1 .fade{ color:var(--muted-2); }
 }
 .stat-cell{ background:var(--bg-2); padding:24px 14px; text-align:center; }
 .stat-divider{ display:none; }
-.stat-num{ font-family:var(--font-geist-mono),monospace; font-weight:700; font-size:clamp(1.5rem,2.6vw,2.1rem); color:var(--lima); }
+.stat-num{ font-family:'Montserrat',sans-serif; font-weight:800; font-size:clamp(1.5rem,2.6vw,2.1rem); color:var(--lima); }
 .stat-label{ font-size:11.5px; color:var(--muted); margin-top:6px; letter-spacing:0.01em; }
 @media (max-width:640px){
   .stat-pill{ grid-template-columns:1fr 1fr; }
@@ -607,6 +608,28 @@ export default function Home() {
         </div>
       </section>
 
+      {/* SECCIÓN DOSSIERS — presentación del Diagnóstico Operativo */}
+      <section className="section" style={{ paddingTop: '80px', paddingBottom: '80px' }}>
+        <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', marginBottom: '40px' }}>
+          <span style={{ color: '#00D1B2', fontSize: '11px', fontWeight: 800, letterSpacing: '0.2em', textTransform: 'uppercase' }}>
+            DIAGNÓSTICO OPERATIVO AIRLOCAL
+          </span>
+          <h2 style={{ color: '#ffffff', fontSize: 'clamp(22px, 4vw, 36px)', fontWeight: 900, lineHeight: 1.2, letterSpacing: '-0.02em', maxWidth: '640px', margin: '0 auto' }}>
+            Entiende tu operación. Detecta fugas. Decide qué priorizar.
+          </h2>
+          <p style={{ color: '#a1a1aa', fontSize: 'clamp(14px, 2vw, 17px)', maxWidth: '480px', lineHeight: 1.6 }}>
+            Tres capas de análisis para convertir tus números en decisiones.
+          </p>
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'center' }}>
+          <img
+            src="/assets/Product_module_transparent.webp"
+            alt="El Guardián · El Cazafugas · El Estratega"
+            style={{ width: 'min(100%, 1150px)', height: 'auto', display: 'block' }}
+          />
+        </div>
+      </section>
+
       <section className="section problem-section">
         <div className="section-head reveal">
           <div className="section-eyebrow">El problema real</div>
@@ -651,117 +674,7 @@ export default function Home() {
         <p className="problem-closer reveal">Cada mes sin esta claridad es dinero que ya no vuelve.</p>
       </section>
 
-      <section className="section">
-        <div className="section-head reveal">
-          <div className="section-eyebrow">Comienza con tu Diagnóstico Express</div>
-          <h2 className="display">Toda operación tiene un estado. Descubre cuál es el de la tuya.</h2>
-          <p>Este es el tipo de diagnóstico personalizado que recibirás al completar tu Diagnóstico Express.</p>
-        </div>
-
-        <div className="state-switch reveal">
-          <button className="state-btn" data-state="saludable"><span className="sw-dot"></span>Saludable</button>
-          <button className="state-btn" data-state="vulnerable"><span className="sw-dot"></span>Vulnerable</button>
-          <button className="state-btn active" data-state="critico"><span className="sw-dot"></span>Crítico</button>
-        </div>
-
-        <div className="dash reveal state-critico" id="dashCard">
-          <div className="dash-title">Propiedad auditada</div>
-          <div className="dash-property" id="dashProperty">Loft Reforma · CDMX, MX</div>
-          <div className="dash-specs" id="dashSpecs">4 huéspedes · 1 hab · 1 baños — 26 noches vendidas este mes</div>
-
-          <div className="mini-stats">
-            <div className="mini-stat">
-              <div className="mini-label">Occupancy rate</div>
-              <div className="mini-val" id="occVal">87%</div>
-              <div className="mini-sub">Ocupación real del mes</div>
-            </div>
-            <div className="mini-stat">
-              <div className="mini-label">ADR actual</div>
-              <div className="mini-val" id="adrVal">$77 <span>USD</span></div>
-              <div className="mini-sub">Tarifa promedio diaria</div>
-            </div>
-          </div>
-
-          <div className="alert-box" id="alertBox">
-            <div className="alert-level" id="alertLevel">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 9v4M12 17h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
-              <span id="alertLevelText">NIVEL DE ALERTA OPERATIVA: ALTO</span>
-            </div>
-            <div className="alert-title">AUDITORÍA: <span id="alertTitleAccent">RIESGO OPERATIVO CRÍTICO</span></div>
-            <p className="alert-desc" id="alertDesc">Tu operación genera utilidad, pero con un margen crítico: una pequeña caída de ingresos o subida de costos te empujaría a pérdida.</p>
-            <div className="alert-line" id="alertLine">Estás a <b>2 noches</b> de entrar en pérdida.</div>
-            <div className="alert-impact-label">Impacto económico</div>
-            <div className="alert-impact">Potencial económico identificado: <span id="potMonthly">+$640 USD/mes</span> <span className="alert-impact-annual" id="potAnnual">(+$7,680 USD/año)</span></div>
-          </div>
-
-          <div className="report-preview">
-            <div className="rp-section">
-              <div className="rp-section-head">
-                <div className="rp-icon"><img src="/assets/icon-guardian.webp" alt="" loading="lazy" /></div>
-                <div>
-                  <div className="rp-eyebrow">Detecta</div>
-                  <div className="rp-question">¿Qué tan saludable está tu operación y cuánto dinero estás dejando sobre la mesa?</div>
-                </div>
-              </div>
-              <div className="rp-visual">
-                <div className="rp-mini-gauge">
-                  <svg viewBox="0 0 100 100">
-                    <circle className="rp-gauge-track" cx="50" cy="50" r="42"/>
-                    <circle className="rp-gauge-fill" id="rpScoreRing" cx="50" cy="50" r="42"/>
-                  </svg>
-                  <div className="rp-mini-gauge-num" id="rpScoreNum">31</div>
-                </div>
-                <div className="rp-chip-col">
-                  <div className="rp-chip"><span className="rp-chip-label">Margen neto</span><span className="rp-chip-val" id="rpMargin">3%</span></div>
-                  <div className="rp-chip"><span className="rp-chip-label">Potencial recuperable</span><span className="rp-chip-val" id="rpPotencial">+$640/mes</span></div>
-                </div>
-              </div>
-            </div>
-
-            <div className="rp-section">
-              <div className="rp-section-head">
-                <div className="rp-icon"><img src="/assets/icon-cazafugas.webp" alt="" loading="lazy" /></div>
-                <div>
-                  <div className="rp-eyebrow">Analiza</div>
-                  <div className="rp-question">¿Cómo se compara tu operación frente a propiedades similares y qué revela ese análisis?</div>
-                </div>
-              </div>
-              <div className="rp-compare">
-                <div className="rp-compare-top">
-                  <span id="rpCompareLabel">Otros gastos</span>
-                  <span id="rpCompareVal">20% tuyo · 3% ideal</span>
-                </div>
-                <div className="rp-compare-track"><div className="rp-compare-fill" id="rpCompareBar" style={{ width: '0%' }}></div></div>
-                <div className="rp-compare-tag" id="rpCompareTag">fuga +17 pts frente al benchmark</div>
-              </div>
-            </div>
-
-            <div className="rp-section">
-              <div className="rp-section-head">
-                <div className="rp-icon"><img src="/assets/icon-estratega.webp" alt="" loading="lazy" /></div>
-                <div>
-                  <div className="rp-eyebrow">Prioriza</div>
-                  <div className="rp-question">¿Qué debes corregir primero para proteger tu rentabilidad?</div>
-                  <p className="rp-sub">Identifica qué frentes operativos revisar primero, ordenados por impacto económico.</p>
-                </div>
-              </div>
-              <div className="rp-priority">
-                <span className="rp-priority-num">1</span>
-                <div className="rp-priority-body">
-                  <div className="rp-priority-title" id="rpPriorityTitle">Otros gastos</div>
-                  <div className="rp-priority-desc" id="rpPriorityDesc">Revisar esta categoría primero.</div>
-                </div>
-                <div className="rp-priority-val" id="rpPriorityVal">+$340/mes</div>
-              </div>
-            </div>
-          </div>
-
-          <div className="cta-wrap">
-            <a className="locked-cta" href="/auditoria-test">Descubrir dónde se pierde el dinero</a>
-            <div className="locked-micro">Acceso instantáneo · Diagnóstico 100% personalizado</div>
-          </div>
-        </div>
-      </section>
+      <DiagnosticShowcase descriptionText="Este es el tipo de diagnóstico personalizado que recibirás al completar tu Diagnóstico Express." />
 
       <section className="trust-band">
         <div className="trust-grid">
@@ -854,8 +767,9 @@ export default function Home() {
             <div className="footer-tagline">AIRLOCAL™ by propiqdata.com</div>
           </div>
           <div className="footer-links">
-            <a href="#">Términos</a>
-            <a href="#">Privacidad</a>
+            <a href="/terms">Términos</a>
+            <a href="/privacy">Privacidad</a>
+            <a href="/refund-policy">Reembolso</a>
             <a href="mailto:soporte@propiqdata.com">soporte@propiqdata.com</a>
           </div>
         </div>
