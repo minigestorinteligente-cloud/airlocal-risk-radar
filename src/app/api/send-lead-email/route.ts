@@ -40,12 +40,15 @@ function buildEmailHtml(data: {
   hero_mensual: number;
   score: number;
   email: string;
+  report_id?: string;
 }): string {
-  const { property_name, estado, hero_mensual } = data;
+  const { property_name, estado, hero_mensual, report_id } = data;
   const propName = property_name || 'Tu Propiedad';
   const badge = getEstadoBadge(estado);
   const potentialAmount = hero_mensual > 0 ? `$${hero_mensual.toLocaleString('es')}` : '$0';
-  const auditUrl = 'https://propiqdata.com/auditoria-test';
+  const auditUrl = report_id
+    ? `https://propiqdata.com/auditoria-test?shared_id=${report_id}`
+    : 'https://propiqdata.com/auditoria-test';
 
   return `<!DOCTYPE html>
 <html lang="es">
@@ -190,7 +193,7 @@ function buildEmailHtml(data: {
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { email, property_name, estado, hero_mensual, score } = body;
+    const { email, property_name, estado, hero_mensual, score, report_id } = body;
 
     // 1. Validar formato
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) {
@@ -221,7 +224,7 @@ export async function POST(req: Request) {
       from: 'AIRLOCAL <soporte@propiqdata.com>',
       to: email,
       subject: `${property_name || 'Tu propiedad'} — encontramos +${hero_mensual > 0 ? `$${Number(hero_mensual).toLocaleString('es')}` : '$0'} USD/mes atrapados`,
-      html: buildEmailHtml({ property_name, estado, hero_mensual: Number(hero_mensual) || 0, score: Number(score) || 0, email }),
+      html: buildEmailHtml({ property_name, estado, hero_mensual: Number(hero_mensual) || 0, score: Number(score) || 0, email, report_id }),
     });
 
     if (resendError) {

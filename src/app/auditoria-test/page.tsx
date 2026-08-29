@@ -1209,6 +1209,7 @@ function AuditoriaFormContent() {
               estado: riesgoVal,
               hero_mensual: potencialVal ?? 0,
               score: scoreVal,
+              report_id: fetchedData.id,
             }),
           }).catch(() => {});
         }
@@ -4452,16 +4453,6 @@ function AuditoriaFormContent() {
               <div className="w-full bg-white border border-zinc-200 rounded-2xl p-5 mb-6 text-center shadow-[0_4px_12px_rgba(0,0,0,0.02)]">
                 <span className="text-zinc-500 text-xs font-semibold block mb-0.5 uppercase tracking-wider">TOTAL A PAGAR</span>
                 <span className="text-3xl font-black text-zinc-400 tracking-tight block mb-1 line-through decoration-red-500 decoration-2">$47,00 USD</span>
-                <span className="text-xs font-bold text-[#008F79] block mb-2">↓ Acceso gratuito con código beta</span>
-                <span 
-                  onClick={() => {
-                    setAccessCode('BETA2026');
-                    if (checkoutError) setCheckoutError('');
-                  }}
-                  className="text-[12px] font-bold text-[#008F79] bg-[#00D1B2]/10 border border-[#00D1B2]/20 rounded-full px-3.5 py-1 inline-block select-all cursor-pointer active:scale-[0.98] transition-all"
-                >
-                  Código de acceso beta: BETA2026
-                </span>
               </div>
 
               {/* Checkout Form */}
