@@ -205,13 +205,17 @@ export async function POST(req: Request) {
       return Response.json({ ok: false, reason: 'disposable_email' }, { status: 400 });
     }
 
-    // 3. Deduplicar: no enviar si ya se envió en las últimas 24h
-    const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    // 3. Deduplicar: no enviar si ya se envió en las últimas 24h.
+    // Excluye reportes de los últimos 10 min (el reporte recién creado por n8n
+    // siempre llega antes que esta llamada, y no debe contar como "ya enviado").
+    const since24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    const grace10m = new Date(Date.now() - 10 * 60 * 1000).toISOString();
     const { data: existing } = await supabase
       .from('reports')
       .select('id, created_at')
       .eq('email', email.toLowerCase())
-      .gte('created_at', since)
+      .gte('created_at', since24h)
+      .lt('created_at', grace10m)
       .limit(1);
 
     if (existing && existing.length > 0) {
