@@ -956,7 +956,7 @@ function AuditoriaFormContent() {
               property_name: String(formData.property_name || 'Tu Propiedad'),
               estado:        rd2.cabecera?.risk_level ?? 'MEDIUM',
               score:         rd2.tacometro?.score_final ?? 0,
-              hero_mensual:  rd2.guardian_conclusion?.potencial_economico_identificado ?? 0,
+              hero_mensual:  rd2.guardian_conclusion?.kpis?.impacto_mensual_detectado ?? rd2.guardian_conclusion?.potencial_economico_identificado ?? 0,
               report_id:     fetchedData.id,
             }),
           }).catch((err: any) => {
