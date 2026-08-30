@@ -944,6 +944,27 @@ function AuditoriaFormContent() {
         } catch (err) {
           console.error('[portal-webhook] payload build error:', err);
         }
+
+        // Fire-and-forget: email de confirmación premium
+        try {
+          const rd2 = fetchedData.report_data || {};
+          fetch('/api/send-premium-email', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              email:         String(formData.email || fetchedData.email || finalEmail),
+              property_name: String(formData.property_name || 'Tu Propiedad'),
+              estado:        rd2.cabecera?.risk_level ?? 'MEDIUM',
+              score:         rd2.tacometro?.score_final ?? 0,
+              hero_mensual:  rd2.guardian_conclusion?.potencial_economico_identificado ?? 0,
+              report_id:     fetchedData.id,
+            }),
+          }).catch((err: any) => {
+            console.error('[send-premium-email] error:', err);
+          });
+        } catch (err) {
+          console.error('[send-premium-email] payload build error:', err);
+        }
       }
 
     } catch (error: any) {
