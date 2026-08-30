@@ -51,6 +51,12 @@ const parseHeroAmount = (val: any, fallbackSuffix: string) => {
   return { value: str, suffix: fallbackSuffix };
 };
 
+// ── INTERRUPTOR del chat Analista en el reporte ──────────────────────────────
+// false = burbuja OCULTA: no monta el widget, no manda el contexto al bot y no
+//         muestra los chips. Nadie puede escribirle (no se generan interacciones).
+// Para REACTIVAR el bot en el reporte: pon esto en true y vuelve a desplegar.
+const ANALISTA_WIDGET_ENABLED = false;
+
 // Construye los "hechos" del reporte del usuario para el Analista AIRLOCAL (Forja).
 // Solo pasa lo que YA calculó n8n — el bot no recalcula ni inventa nada.
 function buildForjaFacts(rep: any): string[] {
@@ -418,6 +424,11 @@ function AuditoriaFormContent() {
   useEffect(() => {
     const FORJA = 'https://forja-crm-14bfb5.malenasoloads.workers.dev';
     if (typeof window === 'undefined') return;
+    if (!ANALISTA_WIDGET_ENABLED) { // burbuja oculta temporalmente (ver ANALISTA_WIDGET_ENABLED arriba)
+      const h = document.querySelector('div[data-forja-widget]') as HTMLElement | null;
+      if (h) h.style.display = 'none';
+      return;
+    }
     // El Analista aparece SOLO donde hay un RESULTADO que interpretar:
     //  · Express: la vista del diagnóstico/teaser (showPlaceholderForm = false)
     //  · Operativa: los resultados desbloqueados
@@ -518,6 +529,7 @@ function AuditoriaFormContent() {
   // abre el chat con esa duda ya lista y el Analista la explica con SUS numeros.
   useEffect(() => {
     if (typeof window === 'undefined') return;
+    if (!ANALISTA_WIDGET_ENABLED) return; // burbuja oculta temporalmente (ver ANALISTA_WIDGET_ENABLED arriba)
     if (currentStep !== 4 || !isUnlocked) return; // solo en resultados premium
 
     const PREGUNTAS: Record<string, string> = {
