@@ -4486,7 +4486,7 @@ function AuditoriaFormContent() {
                     type="text"
                     id="checkout_access_code"
                     name="access_code"
-                    placeholder="Ej: BETA2026"
+                    placeholder="Ingresa tu código de acceso"
                     required
                     autoComplete="off"
                     value={accessCode}
