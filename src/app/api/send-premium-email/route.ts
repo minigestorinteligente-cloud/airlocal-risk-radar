@@ -12,7 +12,7 @@ function getEstadoBadge(estado: string): { label: string; bg: string; border: st
     return { label: 'CRÍTICO',    bg: '#1F0808', border: '#C84A4A', text: '#C84A4A' };
   if (s.includes('VULNERABLE') || s.includes('MEDIUM') || s.includes('TENSO'))
     return { label: 'VULNERABLE', bg: '#2A2308', border: '#C89B4A', text: '#C89B4A' };
-  return   { label: 'SALUDABLE', bg: '#0A1A13', border: '#3EA293', text: '#3EA293' };
+  return   { label: 'SALUDABLE', bg: '#0A1A13', border: '#58bdc2', text: '#58bdc2' };
 }
 
 function buildPremiumEmailHtml(data: {
@@ -55,7 +55,7 @@ function buildPremiumEmailHtml(data: {
           <table role="presentation" cellpadding="0" cellspacing="0">
             <tr>
               <td style="font-family: 'Montserrat', Arial, Helvetica, sans-serif; font-weight:900; font-size:20px; color:#FFFFFF; letter-spacing: 0.5px;">
-                AIRLOCAL<span style="color:#3EA293;">™</span>
+                AIRLOCAL<span style="color:#58bdc2;">™</span>
               </td>
             </tr>
             <tr>
@@ -72,7 +72,7 @@ function buildPremiumEmailHtml(data: {
         <td style="background-color:#15181A; border:1px solid #2A2D2C; border-radius:16px; padding:40px 32px;">
 
           <!-- Label -->
-          <div style="font-family:'Inter', Arial, Helvetica, sans-serif; font-size:11px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:#3EA293; text-align:center; margin-bottom:12px;">
+          <div style="font-family:'Inter', Arial, Helvetica, sans-serif; font-size:11px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:#58bdc2; text-align:center; margin-bottom:12px;">
             Auditoría Operativa Completada ✓
           </div>
 
@@ -104,14 +104,14 @@ function buildPremiumEmailHtml(data: {
                 </div>
               </td>
               <td width="4%">&nbsp;</td>
-              <td width="48%" style="background-color:#0D1F1B; border:1px solid #3EA293; border-radius:12px; padding:20px 16px; text-align:center; vertical-align:top;">
-                <div style="font-family:'Inter', Arial, Helvetica, sans-serif; font-size:10px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:#3EA293; margin-bottom:8px;">
+              <td width="48%" style="background-color:#0D1F1B; border:1px solid #58bdc2; border-radius:12px; padding:20px 16px; text-align:center; vertical-align:top;">
+                <div style="font-family:'Inter', Arial, Helvetica, sans-serif; font-size:10px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:#58bdc2; margin-bottom:8px;">
                   Potencial Económico
                 </div>
-                <div style="font-family:'Montserrat', Arial, Helvetica, sans-serif; font-weight:900; font-size:28px; color:#3EA293; line-height:1;">
+                <div style="font-family:'Montserrat', Arial, Helvetica, sans-serif; font-weight:900; font-size:28px; color:#58bdc2; line-height:1;">
                   +${potAmount}
                 </div>
-                <div style="font-family:'Inter', Arial, Helvetica, sans-serif; font-size:11px; font-weight:600; color:#3EA293; margin-top:4px;">
+                <div style="font-family:'Inter', Arial, Helvetica, sans-serif; font-size:11px; font-weight:600; color:#58bdc2; margin-top:4px;">
                   USD/mes
                 </div>
               </td>

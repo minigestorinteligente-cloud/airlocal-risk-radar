@@ -31,7 +31,7 @@ function getEstadoBadge(estado: string): { label: string; bg: string; border: st
     return { label: 'CRÍTICO',    bg: '#1F0808', border: '#C84A4A', text: '#C84A4A' };
   if (s.includes('VULNERABLE') || s.includes('MEDIUM') || s.includes('TENSO'))
     return { label: 'VULNERABLE', bg: '#2A2308', border: '#C89B4A', text: '#C89B4A' };
-  return   { label: 'SALUDABLE', bg: '#0A1A13', border: '#3EA293', text: '#3EA293' };
+  return   { label: 'SALUDABLE', bg: '#0A1A13', border: '#58bdc2', text: '#58bdc2' };
 }
 
 function buildEmailHtml(data: {
@@ -75,7 +75,7 @@ function buildEmailHtml(data: {
             <table role="presentation" cellpadding="0" cellspacing="0">
               <tr>
                 <td style="font-family: 'Montserrat', Arial, sans-serif; font-weight:900; font-size:20px; color:#FFFFFF; letter-spacing: 0.5px;">
-                  AIRLOCAL<span style="color:#3EA293;">™</span>
+                  AIRLOCAL<span style="color:#58bdc2;">™</span>
                 </td>
               </tr>
               <tr>
@@ -92,7 +92,7 @@ function buildEmailHtml(data: {
           <td style="background-color:#15181A; border:1px solid #2A2D2C; border-radius:16px; padding:40px 32px;">
 
             <!-- Label superior -->
-            <div style="font-family:'Inter', Arial, sans-serif; font-size:11px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:#3EA293; text-align:center; margin-bottom:12px;">
+            <div style="font-family:'Inter', Arial, sans-serif; font-size:11px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:#58bdc2; text-align:center; margin-bottom:12px;">
               Diagnóstico Operativo
             </div>
 
@@ -119,13 +119,13 @@ function buildEmailHtml(data: {
             </div>
 
             <!-- Caja de impacto económico -->
-            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#0D1F1B; border:1px solid #3EA293; border-radius:12px; margin-bottom:28px;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#0D1F1B; border:1px solid #58bdc2; border-radius:12px; margin-bottom:28px;">
               <tr>
                 <td style="padding:24px; text-align:center;">
-                  <div style="font-family:'Inter', Arial, sans-serif; font-size:10px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:#3EA293; margin-bottom:8px;">
+                  <div style="font-family:'Inter', Arial, sans-serif; font-size:10px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:#58bdc2; margin-bottom:8px;">
                     Potencial Económico Identificado
                   </div>
-                  <div style="font-family:'JetBrains Mono', 'Courier New', monospace; font-weight:700; font-size:32px; color:#3EA293;">
+                  <div style="font-family:'JetBrains Mono', 'Courier New', monospace; font-weight:700; font-size:32px; color:#58bdc2;">
                     +${potentialAmount} USD/mes
                   </div>
                 </td>
