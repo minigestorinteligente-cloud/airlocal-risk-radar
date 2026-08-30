@@ -55,7 +55,7 @@ const parseHeroAmount = (val: any, fallbackSuffix: string) => {
 // false = burbuja OCULTA: no monta el widget, no manda el contexto al bot y no
 //         muestra los chips. Nadie puede escribirle (no se generan interacciones).
 // Para REACTIVAR el bot en el reporte: pon esto en true y vuelve a desplegar.
-const ANALISTA_WIDGET_ENABLED = false;
+const ANALISTA_WIDGET_ENABLED: boolean = false;
 
 // Construye los "hechos" del reporte del usuario para el Analista AIRLOCAL (Forja).
 // Solo pasa lo que YA calculó n8n — el bot no recalcula ni inventa nada.
