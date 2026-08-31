@@ -769,52 +769,70 @@ function AuditoriaFormContent() {
   };
 
   const handleConfirmCheckout = async () => {
-    if (accessCode.toUpperCase() !== 'BETA2026') {
-      setCheckoutError('Código inválido. Intenta de nuevo.');
-      (window as any).gtag?.('event', 'codigo_invalido');
+    const STRIPE_PAYMENT_LINK = 'https://buy.stripe.com/test_3cI5kDcEy96B8oH7CEgrS00';
+
+    // ── Flujo BETA: código válido → acceso directo sin pago ──────────────────
+    if (accessCode.toUpperCase() === 'BETA2026') {
+      (window as any).gtag?.('event', 'beta2026_confirmado');
+
+      if (!n8nReport?.assessment_code) {
+        setIsRetryingReport(true);
+        setCheckoutError('');
+        try {
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          if (supabaseClient) {
+            const { data } = await supabaseClient
+              .from('reports')
+              .select('*')
+              .eq('email', formData.email.trim())
+              .order('created_at', { ascending: false })
+              .limit(1)
+              .single() as any;
+            if (data?.assessment_code) {
+              let parsed = { ...data };
+              try {
+                if (parsed.report_data) {
+                  let raw = parsed.report_data;
+                  if (typeof raw === 'string') raw = JSON.parse(raw);
+                  if (typeof raw === 'string') raw = JSON.parse(raw);
+                  if (raw?.report_data && !raw.free) raw = raw.report_data;
+                  parsed = { ...parsed, ...raw };
+                }
+              } catch {}
+              setN8nReport(parsed);
+              setIsRetryingReport(false);
+              setIsCheckoutModalOpen(false);
+              handlePremiumSubmit(parsed);
+              return;
+            }
+          }
+        } catch {}
+        setIsRetryingReport(false);
+        setCheckoutError('Tu diagnóstico todavía se está generando. Espera unos segundos y vuelve a intentarlo.');
+        return;
+      }
+
+      setIsCheckoutModalOpen(false);
+      handlePremiumSubmit();
       return;
     }
-    (window as any).gtag?.('event', 'beta2026_confirmado');
 
-    if (!n8nReport?.assessment_code) {
-      setIsRetryingReport(true);
-      setCheckoutError('');
-      try {
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        if (supabaseClient) {
-          const { data } = await supabaseClient
-            .from('reports')
-            .select('*')
-            .eq('email', formData.email.trim())
-            .order('created_at', { ascending: false })
-            .limit(1)
-            .single() as any;
-          if (data?.assessment_code) {
-            let parsed = { ...data };
-            try {
-              if (parsed.report_data) {
-                let raw = parsed.report_data;
-                if (typeof raw === 'string') raw = JSON.parse(raw);
-                if (typeof raw === 'string') raw = JSON.parse(raw);
-                if (raw?.report_data && !raw.free) raw = raw.report_data;
-                parsed = { ...parsed, ...raw };
-              }
-            } catch {}
-            setN8nReport(parsed);
-            setIsRetryingReport(false);
-            setIsCheckoutModalOpen(false);
-            handlePremiumSubmit(parsed);
-            return;
-          }
-        }
-      } catch {}
-      setIsRetryingReport(false);
+    // ── Flujo Stripe: código vacío o inválido → redirigir al Payment Link ────
+    const reportId = n8nReport?.id || '';
+    const email    = formData.email.trim();
+
+    if (!reportId) {
       setCheckoutError('Tu diagnóstico todavía se está generando. Espera unos segundos y vuelve a intentarlo.');
       return;
     }
 
-    setIsCheckoutModalOpen(false);
-    handlePremiumSubmit();
+    (window as any).gtag?.('event', 'redireccion_stripe', { report_id: reportId });
+
+    const url = new URL(STRIPE_PAYMENT_LINK);
+    url.searchParams.set('client_reference_id', reportId);
+    if (email) url.searchParams.set('prefilled_email', email);
+
+    window.location.href = url.toString();
   };
 
   const handlePremiumSubmit = async (reportOverride?: any) => {
@@ -4525,7 +4543,7 @@ function AuditoriaFormContent() {
                       ? 'bg-zinc-300 text-zinc-500 cursor-not-allowed opacity-75'
                       : accessCode.toUpperCase() === 'BETA2026'
                         ? 'bg-[#FFC439] hover:bg-[#F2B224] text-[#003087] shadow-[0_4px_14px_rgba(255,196,57,0.4)] hover:scale-[1.01]'
-                        : 'bg-zinc-300 text-zinc-500 cursor-not-allowed opacity-75'
+                        : 'bg-[#58bdc2] hover:bg-[#6fc9ce] text-[#04211f] shadow-[0_4px_14px_rgba(88,189,194,0.3)] hover:scale-[1.01]'
                   }`}
                 >
                   {isRetryingReport ? (
@@ -4536,7 +4554,7 @@ function AuditoriaFormContent() {
                       </svg>
                       Verificando tu diagnóstico…
                     </>
-                  ) : 'Confirmar y acceder'}
+                  ) : accessCode.toUpperCase() === 'BETA2026' ? 'Confirmar y acceder' : 'Ir al pago seguro →'}
                 </button>
 
                 {/* Card logos replica from image */}
