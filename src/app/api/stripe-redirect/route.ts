@@ -17,7 +17,7 @@ export async function GET(req: Request) {
 
     if (reportId) {
       return Response.redirect(
-        `https://propiqdata.com/auditoria-test?shared_id=${reportId}`,
+        `https://propiqdata.com/auditoria-test?shared_id=${reportId}&stripe_pago=1`,
         302
       );
     }

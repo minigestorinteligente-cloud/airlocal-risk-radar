@@ -9,6 +9,7 @@ export async function POST(req: Request) {
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   );
+
   const body      = await req.text();
   const signature = req.headers.get('stripe-signature') ?? '';
   const secret    = process.env.STRIPE_WEBHOOK_SECRET ?? '';
@@ -38,7 +39,9 @@ export async function POST(req: Request) {
     return Response.json({ ok: false, reason: 'not_paid' });
   }
 
-  // 1. Marcar el report como premium en Supabase
+  // Marcar el report como premium en Supabase.
+  // El flujo de generación del reporte premium lo completa el frontend
+  // al volver de Stripe (localStorage → handlePremiumSubmit → n8n).
   const { error: updateErr } = await supabase
     .from('reports')
     .update({ report_level: 'premium' })
@@ -49,52 +52,6 @@ export async function POST(req: Request) {
     return Response.json({ ok: false, reason: 'db_update_failed' }, { status: 500 });
   }
 
-  // 2. Disparar n8n para generar el reporte premium (fire-and-forget)
-  const { data: report } = await supabase
-    .from('reports')
-    .select('*')
-    .eq('id', reportId)
-    .single();
-
-  if (report) {
-    const n8nWebhookUrl = process.env.N8N_PREMIUM_WEBHOOK_URL;
-    if (n8nWebhookUrl) {
-      const payload = new URLSearchParams();
-      const rd = report.report_data || {};
-      Object.entries({
-        property_name:        report.property_name    || '',
-        country:              report.country           || '',
-        city:                 report.city              || '',
-        property_type:        report.property_type     || '',
-        market_type:          report.market_type       || '',
-        rooms:                String(rd.rooms          ?? report.rooms          ?? ''),
-        bathrooms:            String(rd.bathrooms      ?? report.bathrooms      ?? ''),
-        beds:                 String(rd.beds           ?? report.beds           ?? ''),
-        nightly_rate:         String(rd.nightly_rate   ?? report.nightly_rate   ?? ''),
-        occupancy_rate:       String(rd.occupancy_rate ?? report.occupancy_rate ?? ''),
-        management_cost:      String(rd.management_cost ?? 0),
-        cleaning_cost:        String(rd.cleaning_cost   ?? 0),
-        supplies_cost:        String(rd.supplies_cost   ?? 0),
-        services_cost:        String(rd.services_cost   ?? 0),
-        maintenence_cost:     String(rd.maintenence_cost ?? 0),
-        tax_cost:             String(rd.tax_cost         ?? 0),
-        Hidden_cost:          String(rd.Hidden_cost      ?? 0),
-        stability_perception: String(rd.stability_perception ?? ''),
-        risk_perception:      String(rd.risk_perception      ?? ''),
-        no_major_risk:        String(rd.no_major_risk        ?? ''),
-        email:                report.email            || '',
-        assessment_code:      report.assessment_code  || '',
-        uuid:                 report.id,
-      }).forEach(([k, v]) => payload.append(k, v));
-
-      fetch(n8nWebhookUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: payload.toString(),
-      }).catch((err) => console.error('[stripe-webhook] n8n trigger error:', err));
-    }
-  }
-
-  console.log('[stripe-webhook] report upgraded to premium:', reportId);
+  console.log('[stripe-webhook] report marked premium:', reportId);
   return Response.json({ ok: true, report_id: reportId });
 }

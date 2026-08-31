@@ -611,8 +611,10 @@ function AuditoriaFormContent() {
   }, [searchParams]);
 
   // CARGA DE REPORTE COMPARTIDO — cuando viene de /r/[id] con ?shared_id=<uuid>
+  // También maneja el retorno del Payment Link de Stripe (?stripe_pago=1)
   useEffect(() => {
     const sharedId = searchParams.get('shared_id');
+    const stripePago = searchParams.get('stripe_pago') === '1';
     if (!sharedId || !supabaseClient) return;
 
     setCurrentStep(4);
@@ -637,8 +639,6 @@ function AuditoriaFormContent() {
           } catch (e) { /* already parsed */ }
 
           setN8nReport(parsedObj);
-          // Free → vista teaser (diagnóstico + CTA) + modo Express.
-          // Premium (ya pagado) → resultados desbloqueados + modo consultor.
           setShowPlaceholderForm(false);
           if (parsedObj.report_level === 'premium') setIsUnlocked(true);
 
@@ -651,6 +651,21 @@ function AuditoriaFormContent() {
             property_name: summary.property_name || prev.property_name,
             gross_income: summary.gross_income || metrics.gross_income || prev.gross_income,
           }));
+
+          // Retorno desde Stripe: recuperar formData del localStorage y disparar el flujo premium
+          if (stripePago) {
+            try {
+              const stored = localStorage.getItem('stripe_pending_' + sharedId);
+              if (stored) {
+                const savedFormData = JSON.parse(stored);
+                localStorage.removeItem('stripe_pending_' + sharedId);
+                // Pequeño delay para que React actualice el DOM antes del spinner
+                setTimeout(() => {
+                  handlePremiumSubmit(parsedObj, savedFormData);
+                }, 200);
+              }
+            } catch {}
+          }
         }
         setIsFetchingReport(false);
       });
@@ -828,6 +843,8 @@ function AuditoriaFormContent() {
 
     (window as any).gtag?.('event', 'redireccion_stripe', { report_id: reportId });
 
+    try { localStorage.setItem('stripe_pending_' + reportId, JSON.stringify(formData)); } catch {}
+
     const url = new URL(STRIPE_PAYMENT_LINK);
     url.searchParams.set('client_reference_id', reportId);
     if (email) url.searchParams.set('prefilled_email', email);
@@ -835,37 +852,38 @@ function AuditoriaFormContent() {
     window.location.href = url.toString();
   };
 
-  const handlePremiumSubmit = async (reportOverride?: any) => {
+  const handlePremiumSubmit = async (reportOverride?: any, formDataOverride?: typeof formData) => {
     setIsSubmitting(true);
     setIsFetchingReport(true);
     setErrorMessage('');
 
     const activeReport = reportOverride ?? n8nReport;
-    const finalEmail = formData.email.trim() || 'malenasoloads@gmail.com';
+    const fd = formDataOverride ?? formData;
+    const finalEmail = fd.email.trim() || 'malenasoloads@gmail.com';
     const assessmentCode = activeReport?.assessment_code || '';
     const reportUuid = activeReport?.id || '';
 
     const payload: Record<string, any> = {
-      property_name: String(formData.property_name),
-      country: String(formData.country || 'España'),
-      city: String(formData.city || 'Madrid'),
-      property_type: String(formData.property_type),
-      market_type: String(formData.market_type || ''),
-      Max_guest: Math.round(Number(formData.Max_guest)),
-      bedrooms: Math.round(Number(formData.bedrooms)),
-      bathrooms: Math.round(Number(formData.bathrooms)),
-      occupied_nights: Math.round(Number(formData.occupied_nights)),
-      available_nights: Math.round(Number(formData.available_nights)),
-      gross_income: Math.round(Number(formData.gross_income)),
-      platfom_commission: Math.round(Number(formData.platfom_commission || 0)),
-      cleaning_cost: Math.round(Number(formData.cleaning_cost || 0)),
-      services_cost: Math.round(Number(formData.services_cost || 0)),
-      maintenence_cost: Math.round(Number(formData.maintenence_cost || 0)),
-      tax_cost: Math.round(Number(formData.tax_cost || 0)),
-      Hidden_cost: Math.round(Number(formData.Hidden_cost || 0)),
-      stability_perception: String(formData.stability_perception),
-      risk_perception: String(formData.risk_perception),
-      no_major_risk: String(formData.no_major_risk),
+      property_name: String(fd.property_name),
+      country: String(fd.country || 'España'),
+      city: String(fd.city || 'Madrid'),
+      property_type: String(fd.property_type),
+      market_type: String(fd.market_type || ''),
+      Max_guest: Math.round(Number(fd.Max_guest)),
+      bedrooms: Math.round(Number(fd.bedrooms)),
+      bathrooms: Math.round(Number(fd.bathrooms)),
+      occupied_nights: Math.round(Number(fd.occupied_nights)),
+      available_nights: Math.round(Number(fd.available_nights)),
+      gross_income: Math.round(Number(fd.gross_income)),
+      platfom_commission: Math.round(Number(fd.platfom_commission || 0)),
+      cleaning_cost: Math.round(Number(fd.cleaning_cost || 0)),
+      services_cost: Math.round(Number(fd.services_cost || 0)),
+      maintenence_cost: Math.round(Number(fd.maintenence_cost || 0)),
+      tax_cost: Math.round(Number(fd.tax_cost || 0)),
+      Hidden_cost: Math.round(Number(fd.Hidden_cost || 0)),
+      stability_perception: String(fd.stability_perception),
+      risk_perception: String(fd.risk_perception),
+      no_major_risk: String(fd.no_major_risk),
       email: String(finalEmail),
       assessment_code: String(assessmentCode),
       uuid: String(reportUuid)
@@ -900,7 +918,7 @@ function AuditoriaFormContent() {
           const { data, error: sbError } = await supabaseClient
             .from('reports')
             .select('*')
-            .eq('assessment_code', n8nReport.assessment_code)
+            .eq('assessment_code', activeReport.assessment_code)
             .single() as any;
 
           if (data && data.report_level === 'premium' && data.status === 'COMPLETED' && data.report_data !== null) {
@@ -4503,7 +4521,7 @@ function AuditoriaFormContent() {
               {/* Price Tag */}
               <div className="w-full bg-white border border-zinc-200 rounded-2xl p-5 mb-6 text-center shadow-[0_4px_12px_rgba(0,0,0,0.02)]">
                 <span className="text-zinc-500 text-xs font-semibold block mb-0.5 uppercase tracking-wider">TOTAL A PAGAR</span>
-                <span className="text-3xl font-black text-zinc-400 tracking-tight block mb-1 line-through decoration-red-500 decoration-2">$47,00 USD</span>
+                <span className="text-3xl font-black text-zinc-800 tracking-tight block mb-1">$47,00 USD</span>
               </div>
 
               {/* Checkout Form */}
