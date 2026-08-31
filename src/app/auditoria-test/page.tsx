@@ -784,7 +784,7 @@ function AuditoriaFormContent() {
   };
 
   const handleConfirmCheckout = async () => {
-    const STRIPE_PAYMENT_LINK = 'https://buy.stripe.com/test_3cI5kDcEy96B8oH7CEgrS00';
+    const STRIPE_PAYMENT_LINK = 'https://buy.stripe.com/3cI5kDcEy96B8oH7CEgrS00';
 
     // ── Flujo BETA: código válido → acceso directo sin pago ──────────────────
     if (accessCode.toUpperCase() === 'BETA2026') {
