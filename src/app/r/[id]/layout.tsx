@@ -76,7 +76,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { id } = await params;
   const url = `${BASE_URL}/r/${id}`;
-  const imageUrl = `${BASE_URL}/r/${id}/opengraph-image`;
+  const imageUrl = `${BASE_URL}/assets/product-modules.webp`;
 
   const meta = await fetchReportMeta(id);
   const description = meta
