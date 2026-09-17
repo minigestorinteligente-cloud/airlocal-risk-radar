@@ -163,7 +163,7 @@ function renderForm(){
     '<div class="scale" data-field="q4">' + btns('q4',[1,2,3,4,5],a.q4,true) + '</div></div>' +
 
     '<div class="card"><span class="q-label"><span class="q-num">05</span>Del 0 al 10, ¿qué tan probable es que lo recomiendes?</span>' +
-    '<div class="nps-row" data-field="q5">' + nps + '</div>' +
+    '<div class="scale nps-row" data-field="q5">' + nps + '</div>' +
     '<div class="nps-labels"><span>Nada probable</span><span>Seguro que sí</span></div></div>' +
 
     '<div class="card"><span class="q-label"><span class="q-num">06</span>Ya viste lo que hace este diagnóstico. Si tuvieras que pagarlo hoy, ¿cuánto te parecería justo?</span>' +
