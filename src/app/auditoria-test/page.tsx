@@ -4,13 +4,13 @@ import { Suspense, useState, useEffect, Fragment } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { AlertTriangle, TrendingUp, CheckCircle2, Clock, DollarSign, BarChart3, RefreshCw, Target, Search, ClipboardCheck, Coins, Lock } from 'lucide-react';
-import { createClient } from '@supabase/supabase-js';
 import { Manrope, Inter } from 'next/font/google';
 import AnimatedNumber from '../../components/AnimatedNumber';
 import { HealthGauge } from "./health-gauge";
 import { LeakRadar, LeakDonut, LeakBars } from "./leak-radar";
 import { SurvivalFormula } from "./survival-formula";
 import { AgentSectionHeader } from "../../components/AgentSectionHeader";
+import { supabase } from '@/lib/supabase';
 
 const manrope = Manrope({
   subsets: ['latin'],
@@ -21,10 +21,6 @@ const inter = Inter({
   subsets: ['latin'],
   weight: ['400', '500'],
 });
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
-const supabaseClient = supabaseUrl && supabaseKey ? createClient(supabaseUrl, supabaseKey) : null;
 
 export const dynamic = 'force-dynamic';
 
@@ -615,60 +611,56 @@ function AuditoriaFormContent() {
   useEffect(() => {
     const sharedId = searchParams.get('shared_id');
     const stripePago = searchParams.get('stripe_pago') === '1';
-    if (!sharedId || !supabaseClient) return;
+    if (!sharedId) return;
 
     setCurrentStep(4);
     setIsFetchingReport(true);
 
-    supabaseClient
-      .from('reports')
-      .select('*')
-      .eq('id', sharedId)
-      .single()
-      .then(({ data, error }: { data: any; error: any }) => {
-        if (data && !error) {
-          let parsedObj = { ...data };
-          try {
-            if (parsedObj.report_data) {
-              let raw = parsedObj.report_data;
-              if (typeof raw === 'string') raw = JSON.parse(raw);
-              if (typeof raw === 'string') raw = JSON.parse(raw);
-              if (raw && raw.report_data && !raw.free) raw = raw.report_data;
-              parsedObj.report_data = raw;
-            }
-          } catch (e) { /* already parsed */ }
-
-          setN8nReport(parsedObj);
-          setShowPlaceholderForm(false);
-          if (parsedObj.report_level === 'premium') setIsUnlocked(true);
-
-          // Pre-fill only the non-sensitive fields from the report
-          const rd = parsedObj.report_data || {};
-          const summary = rd.free?.user_summary || {};
-          const metrics = rd.free?.metrics || {};
-          setFormData(prev => ({
-            ...prev,
-            property_name: summary.property_name || prev.property_name,
-            gross_income: summary.gross_income || metrics.gross_income || prev.gross_income,
-          }));
-
-          // Retorno desde Stripe: recuperar formData del localStorage y disparar el flujo premium
-          if (stripePago) {
-            try {
-              const stored = localStorage.getItem('stripe_pending_' + sharedId);
-              if (stored) {
-                const savedFormData = JSON.parse(stored);
-                localStorage.removeItem('stripe_pending_' + sharedId);
-                // Pequeño delay para que React actualice el DOM antes del spinner
-                setTimeout(() => {
-                  handlePremiumSubmit(parsedObj, savedFormData);
-                }, 200);
-              }
-            } catch {}
+    fetch(`/api/report/by-id?id=${encodeURIComponent(sharedId)}`)
+      .then(res => res.ok ? res.json() : Promise.reject())
+      .then((data: any) => {
+        let parsedObj = { ...data };
+        try {
+          if (parsedObj.report_data) {
+            let raw = parsedObj.report_data;
+            if (typeof raw === 'string') raw = JSON.parse(raw);
+            if (typeof raw === 'string') raw = JSON.parse(raw);
+            if (raw && raw.report_data && !raw.free) raw = raw.report_data;
+            parsedObj.report_data = raw;
           }
+        } catch (e) { /* already parsed */ }
+
+        setN8nReport(parsedObj);
+        setShowPlaceholderForm(false);
+        if (parsedObj.report_level === 'premium') setIsUnlocked(true);
+
+        // Pre-fill only the non-sensitive fields from the report
+        const rd = parsedObj.report_data || {};
+        const summary = rd.free?.user_summary || {};
+        const metrics = rd.free?.metrics || {};
+        setFormData(prev => ({
+          ...prev,
+          property_name: summary.property_name || prev.property_name,
+          gross_income: summary.gross_income || metrics.gross_income || prev.gross_income,
+        }));
+
+        // Retorno desde Stripe: recuperar formData del localStorage y disparar el flujo premium
+        if (stripePago) {
+          try {
+            const stored = localStorage.getItem('stripe_pending_' + sharedId);
+            if (stored) {
+              const savedFormData = JSON.parse(stored);
+              localStorage.removeItem('stripe_pending_' + sharedId);
+              // Pequeño delay para que React actualice el DOM antes del spinner
+              setTimeout(() => {
+                handlePremiumSubmit(parsedObj, savedFormData);
+              }, 200);
+            }
+          } catch {}
         }
-        setIsFetchingReport(false);
-      });
+      })
+      .catch(() => {})
+      .finally(() => { setIsFetchingReport(false); });
   }, [searchParams]);
 
   // MANEJO DE CAMBIOS E INTERACCIONES EN INPUTS (Limpieza de 0 inicial y soporte de strings vacíos)
@@ -795,14 +787,9 @@ function AuditoriaFormContent() {
         setCheckoutError('');
         try {
           await new Promise(resolve => setTimeout(resolve, 2000));
-          if (supabaseClient) {
-            const { data } = await supabaseClient
-              .from('reports')
-              .select('*')
-              .eq('email', formData.email.trim())
-              .order('created_at', { ascending: false })
-              .limit(1)
-              .single() as any;
+          {
+            const res = await fetch(`/api/report/by-email?email=${encodeURIComponent(formData.email.trim())}`);
+            const data = res.ok ? await res.json() : null;
             if (data?.assessment_code) {
               let parsed = { ...data };
               try {
@@ -909,17 +896,15 @@ function AuditoriaFormContent() {
       console.log("Datos Premium enviados con éxito. Consultando Supabase para reporte Premium...");
 
       let fetchedData = null;
-      if (supabaseClient) {
+      {
+        const assessmentCode = activeReport.assessment_code;
         // Polling loop
         for (let attempt = 0; attempt < 8; attempt++) {
           console.log(`Intentando consultar Supabase Premium (intento ${attempt + 1})...`);
           await new Promise(resolve => setTimeout(resolve, 2000));
-          
-          const { data, error: sbError } = await supabaseClient
-            .from('reports')
-            .select('*')
-            .eq('assessment_code', activeReport.assessment_code)
-            .single() as any;
+
+          const res = await fetch(`/api/report/by-code?code=${encodeURIComponent(assessmentCode)}`);
+          const data = res.ok ? await res.json() : null;
 
           if (data && data.report_level === 'premium' && data.status === 'COMPLETED' && data.report_data !== null) {
             let parsedObj = { ...data };
@@ -1206,19 +1191,14 @@ function AuditoriaFormContent() {
       console.log("Datos enviados con éxito en formato parseable. Consultando Supabase para reporte N8N...");
       
       let fetchedData = null;
-      if (supabaseClient) {
+      {
         // Hacemos polling de hasta 4 intentos con un retardo de 2 segundos entre cada uno
         for (let attempt = 0; attempt < 4; attempt++) {
           console.log(`Intentando consultar Supabase (intento ${attempt + 1})...`);
           await new Promise(resolve => setTimeout(resolve, 2000));
-          
-          const { data, error: sbError } = await supabaseClient
-            .from('reports')
-            .select('*')
-            .eq('email', finalEmail)
-            .order('created_at', { ascending: false })
-            .limit(1)
-            .single() as any;
+
+          const res = await fetch(`/api/report/by-email?email=${encodeURIComponent(finalEmail)}&since=${encodeURIComponent(submitTime)}`);
+          const data = res.ok ? await res.json() : null;
 
           if (data && data.created_at && data.created_at >= submitTime) {
             let parsedObj = { ...data };
@@ -1246,7 +1226,7 @@ function AuditoriaFormContent() {
         setN8nReport(fetchedData);
 
         // Enriquecer columnas planas para nurturing (riesgo, profit, perdida_potencial)
-        if (supabaseClient && fetchedData.id) {
+        if (fetchedData.id) {
           const rd = fetchedData.report_data || {};
           const rawLevel: string = rd?.cabecera?.risk_level || rd?.free?.risk_level || '';
           const up = rawLevel.toUpperCase();
@@ -1260,12 +1240,11 @@ function AuditoriaFormContent() {
           const ppSB = rd?.posicionamiento_precio;
           const pricingBonusSB = (ppSB?.disponible && ppSB?.estado === 'BAJO_MERCADO') ? Number(ppSB?.potencial_mensual || 0) : 0;
           const potencialVal = (leaksTotalSB + pricingBonusSB) > 0 ? (leaksTotalSB + pricingBonusSB) : (rd?.free?.hero_mensual ?? null);
-          supabaseClient.from('reports').update({
-            riesgo: riesgoVal,
-            profit: profitVal,
-            perdida_potencial: potencialVal,
-            status: 'analyzed',
-          }).eq('id', fetchedData.id).neq('status', 'confirmed').then(() => {});
+          fetch('/api/report/enrich', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: fetchedData.id, riesgo: riesgoVal, profit: profitVal, perdida_potencial: potencialVal }),
+          }).catch(() => {});
 
           // Enviar email de nurturing (fire-and-forget, no bloquea el flujo)
           const scoreVal = rd?.free?.score ?? rd?.cabecera?.score ?? 0;
@@ -1380,12 +1359,16 @@ function AuditoriaFormContent() {
   const accentText = isHigh ? 'text-[#FF2D2D]' : isMedium ? 'text-[#FFB800]' : 'text-[#00B894]';
   const glowColor = isHigh ? 'rgba(255, 45, 45, 0.4)' : isMedium ? 'rgba(255, 184, 0, 0.4)' : 'rgba(0, 184, 148, 0.4)';
 
-  let breakEvenNoches = hasN8nData
-    ? Number(n8nMetrics?.break_even_nights || 0)
-    : (results.free.metrics.break_even_nights || 10);
+  let breakEvenNoches = (hasN8nData && reportDataObj?.cabecera)
+    ? Number(reportDataObj.cabecera.break_even_nights || 0)
+    : hasN8nData
+      ? Number(n8nMetrics?.break_even_nights || 0)
+      : (results.free.metrics.break_even_nights || 10);
 
   let activeBreakEven = breakEvenNoches;
-  let activeNetIncome = Number(n8nMetrics?.net_income ?? (Number(formData.gross_income || 3000) - totalCostsVal));
+  let activeNetIncome = (hasN8nData && reportDataObj?.datos_entrada)
+    ? Number(reportDataObj.datos_entrada.net_income ?? 0)
+    : Number(n8nMetrics?.net_income ?? (Number(formData.gross_income || 3000) - totalCostsVal));
 
   if (statusFromUrl && !hasN8nData) {
     if (statusFromUrl === 'saludable') {
@@ -1890,7 +1873,9 @@ function AuditoriaFormContent() {
   const scoreFinal = Number(activeReport.tacometro?.score_final ?? 53);
   const cabeceraRiskLevel = riskLevel;
   const activeScore = scoreFinal;
-  const activeExpenseRatio = Number(activeReport.free?.metrics?.expense_ratio ?? 47);
+  const activeExpenseRatio = (hasN8nData && reportDataObj?.datos_entrada)
+    ? Number(reportDataObj.datos_entrada.expense_ratio ?? 47)
+    : Number(activeReport.free?.metrics?.expense_ratio ?? 47);
   // activeNetIncome is already declared and initialized above with overrides
   
   const nightsSold = (() => {
@@ -1910,7 +1895,9 @@ function AuditoriaFormContent() {
 
   // activeBreakEven is already declared and initialized above with overrides
   const activeMargin = Math.max(0, nightsSold - activeBreakEven);
-  const activeMarginOfSafety = Number(activeReport.free?.metrics?.margin_of_safety ?? activeMargin ?? 11);
+  const activeMarginOfSafety = (hasN8nData && reportDataObj?.cabecera)
+    ? Number(reportDataObj.cabecera.margin_of_safety ?? activeMargin ?? 11)
+    : Number(activeReport.free?.metrics?.margin_of_safety ?? activeMargin ?? 11);
   const activeBaseCostPerNight = Number(
     activeReport.free?.metrics?.base_cost_per_night ?? 
     n8nReport?.free?.metrics?.base_cost_per_night ?? 
@@ -2366,17 +2353,21 @@ function AuditoriaFormContent() {
   const activeReportObj = n8nReport?.report_data || n8nReport;
 
   let activeMarginOfSafetyVal = hasN8nData
-    ? Number(activeReportObj?.free?.metrics?.margin_of_safety ?? 9)
+    ? Number(activeReportObj?.cabecera?.margin_of_safety ?? activeReportObj?.free?.metrics?.margin_of_safety ?? 9)
     : activeMarginOfSafety;
 
   const isPremium = n8nReport?.report_level === 'premium' || isUnlocked;
 
   let heroMensualVal = hasN8nData
-    ? Number(activeReportObj?.free?.hero_mensual ?? 808)
+    ? (isPremium && activeReportObj?.guardian_conclusion?.potencial_economico_identificado != null
+        ? Number(activeReportObj.guardian_conclusion.potencial_economico_identificado)
+        : Number(activeReportObj?.free?.hero_mensual ?? 808))
     : Number(productionJson.free?.hero_mensual ?? 808);
 
   let heroAnualVal = hasN8nData
-    ? Number(activeReportObj?.free?.hero_anual ?? 9696)
+    ? (isPremium && activeReportObj?.guardian_conclusion?.potencial_economico_identificado != null
+        ? Number(activeReportObj.guardian_conclusion.potencial_economico_identificado) * 12
+        : Number(activeReportObj?.free?.hero_anual ?? 9696))
     : Number(productionJson.free?.hero_anual ?? 9696);
 
   let colchonTitulo = activeReportObj?.cabecera?.colchon?.titulo;
@@ -4401,15 +4392,13 @@ function AuditoriaFormContent() {
                   e.preventDefault();
                   if (betaEmail.trim()) {
                     setIsBetaSubmitted(true);
-                    if (supabaseClient) {
-                      supabaseClient
-                        .from('beta_signups')
-                        .insert([{ email: betaEmail, source: 'auditoria_radar', created_at: new Date().toISOString() }])
-                        .then(
-                          () => { console.log('Waitlist registered.'); },
-                          (err: any) => { console.error(err); }
-                        );
-                    }
+                    supabase
+                      .from('beta_signups')
+                      .insert([{ email: betaEmail, source: 'auditoria_radar', created_at: new Date().toISOString() }])
+                      .then(
+                        () => { console.log('Waitlist registered.'); },
+                        (err: any) => { console.error(err); }
+                      );
                   }
                 }}
                 className="flex flex-col gap-4"

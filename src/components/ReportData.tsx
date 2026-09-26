@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase';
+import { supabaseServer as supabase } from '@/lib/supabase-server';
 import { Home, Users, CalendarDays, DollarSign, AlertTriangle, TrendingUp, TrendingDown, Lock, CheckCircle2 } from 'lucide-react';
 import AnimatedNumber from './AnimatedNumber';
 import AnimatedProgressBar from './AnimatedProgressBar';

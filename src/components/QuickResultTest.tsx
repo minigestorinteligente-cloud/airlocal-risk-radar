@@ -3,13 +3,8 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Script from 'next/script';
-import { createClient } from '@supabase/supabase-js';
 import { AlertTriangle, CheckCircle2, TrendingUp } from 'lucide-react';
 import AnimatedNumber from './AnimatedNumber';
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
-const supabaseClient = supabaseUrl && supabaseKey ? createClient(supabaseUrl, supabaseKey) : null;
 
 // Dynamic neuromarketing textosCopi object for healthy, vulnerable, and critical states
 const textosCopi = {
@@ -52,24 +47,10 @@ export default function QuickResultTest() {
           return;
         }
 
-        if (!supabaseClient) {
-          // If Supabase isn't configured, we'll allow testing via URL overrides gracefully
-          setIsLoading(false);
-          return;
-        }
+        const res = await fetch(`/api/report/by-email?email=${encodeURIComponent(cleanEmail)}`);
+        const data = res.ok ? await res.json() : null;
 
-        const { data, sbError } = await supabaseClient
-          .from('reports')
-          .select('*')
-          .eq('email', cleanEmail)
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .single() as any;
-
-        if (sbError) {
-          console.error('Supabase Error:', sbError);
-          // Don't crash for test route; let them test using the URL parameters
-        } else if (data) {
+        if (data) {
           let parsedObj = { ...data };
           try {
             if (parsedObj.report_data) {

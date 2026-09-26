@@ -3,14 +3,9 @@
 import { useEffect, useState } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { createClient } from '@supabase/supabase-js';
 import { AlertTriangle, CheckCircle2, TrendingUp } from 'lucide-react';
 import AnimatedNumber from '../../../components/AnimatedNumber';
 import DiagnosticShowcase from '../../../components/DiagnosticShowcase';
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
-const supabase = supabaseUrl && supabaseKey ? createClient(supabaseUrl, supabaseKey) : null;
 
 /* ── helpers ── */
 
@@ -66,23 +61,22 @@ export default function SharedReportPage() {
   const [confirmed, setConfirmed] = useState(false);
 
   useEffect(() => {
-    if (!id || !supabase) { setLoading(false); setNotFound(true); return; }
-    supabase
-      .from('reports')
-      .select('id, riesgo, profit, perdida_potencial, report_data, status')
-      .eq('id', id)
-      .single()
-      .then(({ data, error }: { data: any; error: any }) => {
-        if (error || !data) setNotFound(true); else setReport(data);
-        setLoading(false);
-      });
+    if (!id) { setLoading(false); setNotFound(true); return; }
+    fetch(`/api/report/by-id?id=${encodeURIComponent(id)}`)
+      .then(res => res.ok ? res.json() : Promise.reject())
+      .then((data: any) => { setReport(data); })
+      .catch(() => { setNotFound(true); })
+      .finally(() => { setLoading(false); });
   }, [id]);
 
   useEffect(() => {
-    if (!shouldConfirm || !report || !supabase) return;
+    if (!shouldConfirm || !report) return;
     if (report.status === 'confirmed') { setConfirmed(true); return; }
-    supabase.from('reports').update({ status: 'confirmed' }).eq('id', report.id)
-      .then(({ error }: { error: any }) => { if (!error) setConfirmed(true); });
+    fetch('/api/report/confirm', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: report.id }),
+    }).then(res => { if (res.ok) setConfirmed(true); });
   }, [shouldConfirm, report]);
 
   /* derive */
