@@ -4182,7 +4182,7 @@ function AuditoriaFormContent() {
                       INGRESO MENSUAL ESTIMADO ({userCurrency.currency})
                     </label>
                     <div className="relative flex items-center mt-1">
-                      <span className="absolute left-4 text-zinc-500 font-bold text-xs">{userCurrency.currency}</span>
+                      <span className="absolute left-3 text-zinc-500 font-bold text-xs tracking-tight">{userCurrency.currency}</span>
                       <input
                         type="number"
                         id="gross_income"
@@ -4192,7 +4192,7 @@ function AuditoriaFormContent() {
                         value={formData.gross_income}
                         onChange={handleInputChange}
                         onFocus={handleInputFocus}
-                        className="w-full bg-[#0B0B0C] border border-white/10 rounded-lg pl-8 pr-4 py-3 text-base text-white placeholder-zinc-500 focus:outline-none focus:border-[#00D1B2] transition-all font-mono"
+                        className="w-full bg-[#0B0B0C] border border-white/10 rounded-lg pl-14 pr-4 py-3 text-base text-white placeholder-zinc-500 focus:outline-none focus:border-[#00D1B2] transition-all font-mono"
                       />
                     </div>
                     <span className="text-[10px] text-zinc-500">Suma total aproximada cobrada en reservas este mes.</span>
@@ -4204,7 +4204,7 @@ function AuditoriaFormContent() {
                       GASTOS OPERATIVOS APROXIMADOS ({userCurrency.currency})
                     </label>
                     <div className="relative flex items-center mt-1">
-                      <span className="absolute left-4 text-zinc-500 font-bold text-xs">{userCurrency.currency}</span>
+                      <span className="absolute left-3 text-zinc-500 font-bold text-xs tracking-tight">{userCurrency.currency}</span>
                       <input
                         type="number"
                         id="approximate_expenses"
@@ -4214,7 +4214,7 @@ function AuditoriaFormContent() {
                         value={formData.approximate_expenses}
                         onChange={handleInputChange}
                         onFocus={handleInputFocus}
-                        className="w-full bg-[#0B0B0C] border border-white/10 rounded-lg pl-8 pr-4 py-3 text-base text-white placeholder-zinc-500 focus:outline-none focus:border-[#00D1B2] transition-all font-mono"
+                        className="w-full bg-[#0B0B0C] border border-white/10 rounded-lg pl-14 pr-4 py-3 text-base text-white placeholder-zinc-500 focus:outline-none focus:border-[#00D1B2] transition-all font-mono"
                       />
                     </div>
                     <span className="text-[10px] text-zinc-500">Suma estimada de todos tus costos mensuales de operación.</span>
