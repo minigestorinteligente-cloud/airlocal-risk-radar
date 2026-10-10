@@ -357,7 +357,7 @@ function AuditoriaFormContent() {
   const [checkoutError, setCheckoutError] = useState('');
   const [isRetryingReport, setIsRetryingReport] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
-  const [userCurrency, setUserCurrency] = useState({ currency: 'USD', symbol: '$', name: 'US Dollar', rate: 1, country: 'US' });
+  const [userCurrency, setUserCurrency] = useState({ currency: 'USD', symbol: '$', name: 'US Dollar', rate: 1, country: 'US', countryName: '', exampleCity: 'Miami' });
 
   interface FormDataState {
     property_name: string;
@@ -421,7 +421,13 @@ function AuditoriaFormContent() {
     const url = testCountry ? `/api/geo?country=${testCountry}` : '/api/geo';
     fetch(url)
       .then(r => r.ok ? r.json() : null)
-      .then(d => { if (d?.rate) setUserCurrency(d); })
+      .then(d => {
+        if (!d?.rate) return;
+        setUserCurrency(d);
+        if (d.countryName) {
+          setFormData(prev => ({ ...prev, country: prev.country || d.countryName }));
+        }
+      })
       .catch(() => {});
   }, []);
 
@@ -2792,7 +2798,7 @@ function AuditoriaFormContent() {
                         name="country"
                         value={formData.country}
                         onChange={handleInputChange}
-                        placeholder="Ej. España"
+                        placeholder={userCurrency.countryName || 'Ej. Colombia'}
                         className="w-full bg-[#18181A] border border-white/10 rounded-xl px-4 py-2.5 text-xs text-zinc-300 placeholder-zinc-500 focus:outline-none focus:border-[#00D1B2]"
                       />
                     </div>
@@ -2804,7 +2810,7 @@ function AuditoriaFormContent() {
                         name="city"
                         value={formData.city}
                         onChange={handleInputChange}
-                        placeholder="Ej. Barcelona"
+                        placeholder={`Ej. ${userCurrency.exampleCity || 'Bogotá'}`}
                         className="w-full bg-[#18181A] border border-white/10 rounded-xl px-4 py-2.5 text-xs text-zinc-300 placeholder-zinc-500 focus:outline-none focus:border-[#00D1B2]"
                       />
                     </div>
@@ -4022,7 +4028,7 @@ function AuditoriaFormContent() {
                       name="country"
                       value={formData.country}
                       onChange={handleInputChange}
-                      placeholder="Ej. España"
+                      placeholder={userCurrency.countryName || 'Ej. Colombia'}
                       className="w-full bg-[#18181A] border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-zinc-400 focus:outline-none focus:border-[#00D1B2] focus:ring-1 focus:ring-[#00D1B2] transition-all"
                     />
                   </div>
@@ -4038,7 +4044,7 @@ function AuditoriaFormContent() {
                       name="city"
                       value={formData.city}
                       onChange={handleInputChange}
-                      placeholder="Ej. Barcelona"
+                      placeholder={`Ej. ${userCurrency.exampleCity || 'Bogotá'}`}
                       className="w-full bg-[#18181A] border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-zinc-400 focus:outline-none focus:border-[#00D1B2] focus:ring-1 focus:ring-[#00D1B2] transition-all"
                     />
                   </div>
