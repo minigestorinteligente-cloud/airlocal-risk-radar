@@ -2671,9 +2671,8 @@ function AuditoriaFormContent() {
                 <div className="text-zinc-500 text-[10px] font-bold tracking-widest uppercase mb-2">ADR ACTUAL</div>
                 <div className="flex flex-col">
                   <div className="text-2xl font-black text-white flex items-baseline gap-1">
-                    <span className="text-sm font-bold text-zinc-500">$</span>
-                    <AnimatedNumber value={Math.round(Number(activeReport.free?.metrics?.avg_nightly_income || 0))} />
-                    <span className="text-[10px] uppercase font-bold text-zinc-500 ml-1 tracking-tighter">USD</span>
+                    <AnimatedNumber value={Math.round(Number(activeReport.free?.metrics?.avg_nightly_income || 0) * userCurrency.rate)} />
+                    <span className="text-[10px] uppercase font-bold text-zinc-500 ml-1 tracking-tighter">{userCurrency.currency}/noche</span>
                   </div>
                   <div className="text-[10px] text-zinc-500 font-medium mt-1">Tarifa promedio diaria</div>
                 </div>
@@ -2704,7 +2703,14 @@ function AuditoriaFormContent() {
                 (hasN8nData ? activeReportObj?.free?.impact_text : productionJson.free?.impact_text) !== "" && (
                   <p
                     className="text-zinc-400 text-sm leading-relaxed mb-6 font-medium"
-                    dangerouslySetInnerHTML={{ __html: ((hasN8nData ? activeReportObj?.free?.impact_text : productionJson.free?.impact_text) || narrative.desc).replace(/text-\[#[0-9A-Fa-f]{3,6}\]/g, narrative.accentText) }}
+                    dangerouslySetInnerHTML={{ __html: ((hasN8nData ? activeReportObj?.free?.impact_text : productionJson.free?.impact_text) || narrative.desc)
+                      .replace(/text-\[#[0-9A-Fa-f]{3,6}\]/g, narrative.accentText)
+                      .replace(/\$\+?([\d,]+(?:\.\d+)?)\s*USD/g, (_: string, amt: string) => {
+                        if (userCurrency.currency === 'USD') return `$${amt} USD`;
+                        const num = Math.round(Number(amt.replace(/,/g, '')) * userCurrency.rate);
+                        return `${userCurrency.currency} ${num.toLocaleString('en-US')}`;
+                      })
+                    }}
                   />
                 )
               )}
@@ -2735,18 +2741,12 @@ function AuditoriaFormContent() {
                   </div>
                   <div className="text-xl md:text-2xl font-black text-white">
                     Potencial Económico Identificado:{" "}
-                    {activeReportObj?.free?.hero_display ? (
+                    <>
                       <span className={`font-black ${narrative.accentText}`}>
-                        {activeReportObj.free.hero_display}
-                      </span>
-                    ) : (
-                      <>
-                        <span className={`font-black ${narrative.accentText}`}>
-                          +{formattedHeroMensual} {userCurrency.currency}/mes
-                        </span>{" "}
-                        (+{formattedHeroAnual} {userCurrency.currency}/año)
-                      </>
-                    )}
+                        +{formattedHeroMensual} {userCurrency.currency}/mes
+                      </span>{" "}
+                      (+{formattedHeroAnual} {userCurrency.currency}/año)
+                    </>
                   </div>
                 </div>
               </div>
