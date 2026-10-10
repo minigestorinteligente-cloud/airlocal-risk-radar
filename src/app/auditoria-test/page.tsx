@@ -322,6 +322,7 @@ function AuditoriaFormContent() {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
       if (params.get('status') || params.get('report_id')) return 4;
+      if (params.has('iniciar')) return 1;
     }
     return 0;
   });
@@ -356,6 +357,7 @@ function AuditoriaFormContent() {
   const [checkoutError, setCheckoutError] = useState('');
   const [isRetryingReport, setIsRetryingReport] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
+  const [userCurrency, setUserCurrency] = useState({ currency: 'USD', symbol: '$', name: 'US Dollar', rate: 1, country: 'US' });
 
   interface FormDataState {
     property_name: string;
@@ -410,6 +412,18 @@ function AuditoriaFormContent() {
     no_major_risk: 'Nada en particular (por ahora)',
     email: '',
   });
+
+  // ── Detección de moneda local por geolocalización IP ──────────────────────
+  useEffect(() => {
+    const testCountry = typeof window !== 'undefined'
+      ? new URLSearchParams(window.location.search).get('test_country')
+      : null;
+    const url = testCountry ? `/api/geo?country=${testCountry}` : '/api/geo';
+    fetch(url)
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d?.rate) setUserCurrency(d); })
+      .catch(() => {});
+  }, []);
 
   // ── Chat "Analista AIRLOCAL" (Forja) — grounded en los datos del reporte ──
   // Cuando el reporte del usuario ya está cargado, primero registramos SUS datos
@@ -594,7 +608,7 @@ function AuditoriaFormContent() {
     }
 
     // Auto-asignación de email de pruebas si está vacío en URL y localStorage
-    const emailToUse = urlEmail || localEmail || 'malenasoloads@gmail.com';
+    const emailToUse = urlEmail || localEmail || '';
 
     setFormData(prev => ({
       ...prev,
@@ -846,7 +860,7 @@ function AuditoriaFormContent() {
 
     const activeReport = reportOverride ?? n8nReport;
     const fd = formDataOverride ?? formData;
-    const finalEmail = fd.email.trim() || 'malenasoloads@gmail.com';
+    const finalEmail = fd.email.trim();
     const assessmentCode = activeReport?.assessment_code || '';
     const reportUuid = activeReport?.id || '';
 
@@ -861,13 +875,13 @@ function AuditoriaFormContent() {
       bathrooms: Math.round(Number(fd.bathrooms)),
       occupied_nights: Math.round(Number(fd.occupied_nights)),
       available_nights: Math.round(Number(fd.available_nights)),
-      gross_income: Math.round(Number(fd.gross_income)),
-      platfom_commission: Math.round(Number(fd.platfom_commission || 0)),
-      cleaning_cost: Math.round(Number(fd.cleaning_cost || 0)),
-      services_cost: Math.round(Number(fd.services_cost || 0)),
-      maintenence_cost: Math.round(Number(fd.maintenence_cost || 0)),
-      tax_cost: Math.round(Number(fd.tax_cost || 0)),
-      Hidden_cost: Math.round(Number(fd.Hidden_cost || 0)),
+      gross_income: Math.round(Number(fd.gross_income) / userCurrency.rate),
+      platfom_commission: Math.round(Number(fd.platfom_commission || 0) / userCurrency.rate),
+      cleaning_cost: Math.round(Number(fd.cleaning_cost || 0) / userCurrency.rate),
+      services_cost: Math.round(Number(fd.services_cost || 0) / userCurrency.rate),
+      maintenence_cost: Math.round(Number(fd.maintenence_cost || 0) / userCurrency.rate),
+      tax_cost: Math.round(Number(fd.tax_cost || 0) / userCurrency.rate),
+      Hidden_cost: Math.round(Number(fd.Hidden_cost || 0) / userCurrency.rate),
       stability_perception: String(fd.stability_perception),
       risk_perception: String(fd.risk_perception),
       no_major_risk: String(fd.no_major_risk),
@@ -1076,7 +1090,7 @@ function AuditoriaFormContent() {
 
     return {
       meta: {
-        email: formData.email || "malenasoloads@gmail.com",
+        email: formData.email || "",
         premium_locked: true,
         premium_cta: net_income <= 0 ? "Detener Pérdida de Dinero" : "Revelar Plan de Acción"
       },
@@ -1149,14 +1163,14 @@ function AuditoriaFormContent() {
       bathrooms: Math.round(Number(formData.bathrooms)),
       occupied_nights: Math.round(Number(formData.occupied_nights)),
       available_nights: Math.round(Number(formData.available_nights)),
-      gross_income: Math.round(Number(formData.gross_income)),
+      gross_income: Math.round(Number(formData.gross_income) / userCurrency.rate),
       platfom_commission: 0,
       cleaning_cost: 0,
       services_cost: 0,
       maintenence_cost: 0,
       tax_cost: 0,
-      Hidden_cost: Math.round(Number(formData.approximate_expenses || 1400)),
-      competitive_adr: formData.competitive_adr !== '' ? Number(formData.competitive_adr) : '',
+      Hidden_cost: Math.round(Number(formData.approximate_expenses || 1400) / userCurrency.rate),
+      competitive_adr: formData.competitive_adr !== '' ? Math.round(Number(formData.competitive_adr) / userCurrency.rate) : '',
       stability_perception: String(formData.stability_perception),
       risk_perception: String(formData.risk_perception),
       no_major_risk: String(formData.no_major_risk),
@@ -1412,7 +1426,7 @@ function AuditoriaFormContent() {
 
   const productionJson = {
     meta: {
-      email: "malenasoloads@gmail.com",
+      email: "demo@ejemplo.com",
       premium_locked: false,
       premium_cta: "Exportar Reporte a PDF"
     },
@@ -2402,6 +2416,9 @@ function AuditoriaFormContent() {
     return str.replace(/^\+?\$?/, '').replace(/\s*USD.*$/, '').replace(/\/.*$/, '').trim();
   };
 
+  heroMensualVal = Math.round(heroMensualVal * userCurrency.rate);
+  heroAnualVal = Math.round(heroAnualVal * userCurrency.rate);
+
   const formattedHeroMensual = formatHeroValue(heroMensualVal);
   const formattedHeroAnual = formatHeroValue(heroAnualVal);
 
@@ -2725,9 +2742,9 @@ function AuditoriaFormContent() {
                     ) : (
                       <>
                         <span className={`font-black ${narrative.accentText}`}>
-                          +${formattedHeroMensual} USD/mes
+                          +{formattedHeroMensual} {userCurrency.currency}/mes
                         </span>{" "}
-                        (+${formattedHeroAnual} USD/año)
+                        (+{formattedHeroAnual} {userCurrency.currency}/año)
                       </>
                     )}
                   </div>
@@ -2818,7 +2835,7 @@ function AuditoriaFormContent() {
                     </div>
                     {/* Ingreso Mensual */}
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Ingreso mensual (USD)</label>
+                      <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Ingreso mensual ({userCurrency.currency})</label>
                       <input
                         type="number"
                         name="gross_income"
@@ -2854,7 +2871,7 @@ function AuditoriaFormContent() {
                     </div>
                     {/* Gastos Aproximados */}
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Gastos aproximados (USD)</label>
+                      <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Gastos aproximados ({userCurrency.currency})</label>
                       <input
                         type="number"
                         name="approximate_expenses"
@@ -2897,7 +2914,7 @@ function AuditoriaFormContent() {
                     {/* Comisión OTA */}
                     <div className="flex flex-col gap-2">
                       <label htmlFor="platfom_commission_premium" className="text-xs font-bold uppercase tracking-wider text-zinc-400 font-semibold">
-                        Comisión OTA / Plataformas (USD)
+                        Comisión OTA / Plataformas ({userCurrency.currency})
                       </label>
                       <input 
                         type="number"
@@ -2912,7 +2929,7 @@ function AuditoriaFormContent() {
                     {/* Limpieza */}
                     <div className="flex flex-col gap-2">
                       <label htmlFor="cleaning_cost_premium" className="text-xs font-bold uppercase tracking-wider text-zinc-400 font-semibold">
-                        Limpieza Total (USD)
+                        Limpieza Total ({userCurrency.currency})
                       </label>
                       <input 
                         type="number"
@@ -2927,7 +2944,7 @@ function AuditoriaFormContent() {
                     {/* Servicios */}
                     <div className="flex flex-col gap-2">
                       <label htmlFor="services_cost_premium" className="text-xs font-bold uppercase tracking-wider text-zinc-400 font-semibold">
-                        Servicios Básicos / Gas / Luz (USD)
+                        Servicios Básicos / Gas / Luz ({userCurrency.currency})
                       </label>
                       <input 
                         type="number"
@@ -2942,7 +2959,7 @@ function AuditoriaFormContent() {
                     {/* Mantenimiento */}
                     <div className="flex flex-col gap-2">
                       <label htmlFor="maintenence_cost_premium" className="text-xs font-bold uppercase tracking-wider text-zinc-400 font-semibold">
-                        Mantenimiento / Reparaciones (USD)
+                        Mantenimiento / Reparaciones ({userCurrency.currency})
                       </label>
                       <input 
                         type="number"
@@ -2957,7 +2974,7 @@ function AuditoriaFormContent() {
                     {/* Impuestos */}
                     <div className="flex flex-col gap-2">
                       <label htmlFor="tax_cost_premium" className="text-xs font-bold uppercase tracking-wider text-zinc-400 font-semibold">
-                        Impuestos y Licencias (USD)
+                        Impuestos y Licencias ({userCurrency.currency})
                       </label>
                       <input 
                         type="number"
@@ -2972,7 +2989,7 @@ function AuditoriaFormContent() {
                     {/* Otros Gastos */}
                     <div className="flex flex-col gap-2">
                       <label htmlFor="Hidden_cost_premium" className="text-xs font-bold uppercase tracking-wider text-zinc-400 font-semibold">
-                        Otros Gastos Ocultos (USD)
+                        Otros Gastos Ocultos ({userCurrency.currency})
                       </label>
                       <input 
                         type="number"
@@ -3126,22 +3143,26 @@ function AuditoriaFormContent() {
             {/* CONTENEDOR GENERAL FASE 1 */}
             <div className="w-full border border-[#2A2F36] rounded-[20px] p-6 md:p-8 mb-12 bg-transparent text-left">
               {(() => {
-                const totalMensual = activeReport.guardian_conclusion?.kpis?.impacto_mensual_detectado ?? 0;
-                const totalAnual = activeReport.guardian_conclusion?.kpis?.impacto_anual_detectado ?? 0;
+                const impactoRawUSD = activeReport.guardian_conclusion?.kpis?.impacto_mensual_detectado ?? 0;
+                const impactoRaw = Math.round(impactoRawUSD * userCurrency.rate);
+                const totalMensual = impactoRaw;
+                const totalAnual = Math.round((activeReport.guardian_conclusion?.kpis?.impacto_anual_detectado ?? 0) * userCurrency.rate);
+                const isZeroImpact = impactoRawUSD === 0 && riskLevel === 'LOW';
 
+                const currCode = userCurrency.currency;
                 const formatOpportunity = (val: any, defaultSuffix: string) => {
-                  if (val === undefined || val === null) return `+$0 ${defaultSuffix}`;
+                  if (val === undefined || val === null) return `+0 ${defaultSuffix}`;
                   const str = String(val);
                   if (str.startsWith('+') || str.includes('$')) return str;
                   const num = Number(str.replace(/[^0-9.-]/g, ''));
                   if (!isNaN(num)) {
-                    return `+$${num.toLocaleString()} ${defaultSuffix}`;
+                    return `+${num.toLocaleString()} ${defaultSuffix}`;
                   }
                   return str;
                 };
 
-                const formattedTotalMensual = formatOpportunity(totalMensual, "USD / mes");
-                const formattedTotalAnual = formatOpportunity(totalAnual, "USD / año");
+                const formattedTotalMensual = formatOpportunity(totalMensual, `${currCode} / mes`);
+                const formattedTotalAnual = formatOpportunity(totalAnual, `${currCode} / año`);
 
                 return (
                   <>
@@ -3302,33 +3323,46 @@ function AuditoriaFormContent() {
 
                               {/* IMPACTO ECONÓMICO */}
                               <div className="w-full flex flex-col gap-4 pt-6 border-t border-white/[0.03]">
-                                {/* Monto Mensual */}
-                                <div className="flex flex-col gap-1.5">
-                                  <span className="text-xs font-extrabold text-neutral-500 uppercase tracking-widest">
-                                    Impacto Mensual
-                                  </span>
-                                  <div className="flex items-baseline gap-2 flex-wrap">
-                                    <span className="text-4xl md:text-5xl font-black text-[#00D1B2] tracking-tight">
-                                      {formattedTotalMensual}
+                                {isZeroImpact ? (
+                                  <div className="flex flex-col gap-1.5">
+                                    <span className="text-xs font-extrabold text-neutral-500 uppercase tracking-widest">
+                                      Estado Operativo
+                                    </span>
+                                    <span className="text-2xl md:text-3xl font-black text-[#00D1B2] tracking-tight">
+                                      Sin fugas confirmadas
                                     </span>
                                   </div>
-                                </div>
+                                ) : (
+                                  <>
+                                    {/* Monto Mensual */}
+                                    <div className="flex flex-col gap-1.5">
+                                      <span className="text-xs font-extrabold text-neutral-500 uppercase tracking-widest">
+                                        Impacto Mensual
+                                      </span>
+                                      <div className="flex items-baseline gap-2 flex-wrap">
+                                        <span className="text-4xl md:text-5xl font-black text-[#00D1B2] tracking-tight">
+                                          {formattedTotalMensual}
+                                        </span>
+                                      </div>
+                                    </div>
 
-                                {/* Monto Anual */}
-                                <div className="flex flex-col gap-1.5">
-                                  <span className="text-xs font-extrabold text-neutral-500 uppercase tracking-widest">
-                                    Impacto Anual
-                                  </span>
-                                  <div className="flex items-baseline gap-2 flex-wrap">
-                                    <span className="text-2xl md:text-3xl font-black text-white tracking-tight">
-                                      {formattedTotalAnual}
-                                    </span>
-                                  </div>
-                                </div>
+                                    {/* Monto Anual */}
+                                    <div className="flex flex-col gap-1.5">
+                                      <span className="text-xs font-extrabold text-neutral-500 uppercase tracking-widest">
+                                        Impacto Anual
+                                      </span>
+                                      <div className="flex items-baseline gap-2 flex-wrap">
+                                        <span className="text-2xl md:text-3xl font-black text-white tracking-tight">
+                                          {formattedTotalAnual}
+                                        </span>
+                                      </div>
+                                    </div>
+                                  </>
+                                )}
                               </div>
 
                               {/* NOTA DE TRANSICIÓN */}
-                              {activeReport.guardian_conclusion?.nota_transicion && (
+                              {activeReport.guardian_conclusion?.nota_transicion && !isZeroImpact && (
                                 <div className="w-full text-left pt-6 mt-6 border-t border-white/[0.03] flex items-start gap-2 text-zinc-400">
                                   <CheckCircle2 className="w-4 h-4 text-zinc-500 shrink-0 mt-0.5" />
                                   <p className="text-xs md:text-sm leading-relaxed font-medium">
@@ -3727,7 +3761,7 @@ function AuditoriaFormContent() {
               const leaksTotal = activeReport?.leak_analysis?.total_recoverable_monthly || 0;
               const pp = activeReport?.posicionamiento_precio;
               const pricingPotential = (pp?.disponible && pp?.estado === 'BAJO_MERCADO') ? (pp?.potencial_mensual || 0) : 0;
-              const grandTotal = leaksTotal + pricingPotential;
+              const grandTotal = Math.round((leaksTotal + pricingPotential) * userCurrency.rate);
 
               // KPI 1 — Score + estado
               const estadoLabel = riskLevel === 'HIGH' ? 'CRÍTICO' : riskLevel === 'MEDIUM' ? 'VULNERABLE' : 'SALUDABLE';
@@ -3777,10 +3811,14 @@ function AuditoriaFormContent() {
                       <span className="text-sm font-semibold text-zinc-400">Potencial recuperable</span>
                       <div className="flex flex-col items-end shrink-0">
                         <span className="text-2xl md:text-3xl font-black text-[#00D1B2] tabular-nums leading-none">
-                          {grandTotal > 0 ? `+$${grandTotal.toLocaleString('en-US')}` : '$0'} USD/mes
+                          {grandTotal > 0
+                            ? `+${grandTotal.toLocaleString('en-US')} ${userCurrency.currency}/mes`
+                            : riskLevel === 'LOW'
+                              ? 'Sin fugas confirmadas'
+                              : `0 ${userCurrency.currency}/mes`}
                         </span>
                         {grandTotal > 0 && (
-                          <span className="text-xs font-bold text-zinc-500 mt-0.5">+${(grandTotal * 12).toLocaleString('en-US')} USD/año</span>
+                          <span className="text-xs font-bold text-zinc-500 mt-0.5">+{(grandTotal * 12).toLocaleString('en-US')} {userCurrency.currency}/año</span>
                         )}
                       </div>
                     </div>
@@ -4141,10 +4179,10 @@ function AuditoriaFormContent() {
                   {/* Ingreso Mensual */}
                   <div className="flex flex-col gap-2 bg-[#18181A] p-4 rounded-xl border border-white/5">
                     <label htmlFor="gross_income" className="text-xs font-bold uppercase tracking-wider text-[#00D1B2]">
-                      INGRESO MENSUAL ESTIMADO (USD)
+                      INGRESO MENSUAL ESTIMADO ({userCurrency.currency})
                     </label>
                     <div className="relative flex items-center mt-1">
-                      <span className="absolute left-4 text-zinc-500 font-bold">$</span>
+                      <span className="absolute left-4 text-zinc-500 font-bold text-xs">{userCurrency.currency}</span>
                       <input
                         type="number"
                         id="gross_income"
@@ -4163,10 +4201,10 @@ function AuditoriaFormContent() {
                   {/* Gastos Aproximados */}
                   <div className="flex flex-col gap-2 bg-[#18181A] p-4 rounded-xl border border-white/5">
                     <label htmlFor="approximate_expenses" className="text-xs font-bold uppercase tracking-wider text-[#00D1B2]">
-                      GASTOS OPERATIVOS APROXIMADOS (USD)
+                      GASTOS OPERATIVOS APROXIMADOS ({userCurrency.currency})
                     </label>
                     <div className="relative flex items-center mt-1">
-                      <span className="absolute left-4 text-zinc-500 font-bold">$</span>
+                      <span className="absolute left-4 text-zinc-500 font-bold text-xs">{userCurrency.currency}</span>
                       <input
                         type="number"
                         id="approximate_expenses"
