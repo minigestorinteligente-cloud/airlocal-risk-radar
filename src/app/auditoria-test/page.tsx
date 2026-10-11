@@ -323,6 +323,7 @@ function AuditoriaFormContent() {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
       if (params.get('status') || params.get('report_id')) return 4;
+      if (params.get('code')) return 4;
       if (params.has('iniciar')) return 1;
     }
     return 0;
@@ -330,7 +331,12 @@ function AuditoriaFormContent() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [n8nReport, setN8nReport] = useState<any>(null);
-  const [isFetchingReport, setIsFetchingReport] = useState(false);
+  const [isFetchingReport, setIsFetchingReport] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return !!new URLSearchParams(window.location.search).get('code');
+    }
+    return false;
+  });
 
   // Comunica el paso actual al body para que el CSS pueda mostrar/ocultar el sweep
   useEffect(() => {
@@ -686,8 +692,10 @@ function AuditoriaFormContent() {
 
   // CARGA DIRECTA POR ASSESSMENT CODE — ?code=AL-2026-XXXX (link del WA de Forja)
   useEffect(() => {
-    const code = searchParams.get('code');
-    if (!code || searchParams.get('shared_id')) return;
+    const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+    const code = searchParams.get('code') || urlParams?.get('code') || '';
+    const sharedId = searchParams.get('shared_id') || urlParams?.get('shared_id') || '';
+    if (!code || sharedId) return;
 
     setCurrentStep(4);
     setIsFetchingReport(true);
