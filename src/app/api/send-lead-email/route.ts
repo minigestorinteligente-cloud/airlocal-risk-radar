@@ -3,11 +3,6 @@ export const dynamic = 'force-dynamic';
 import { createClient } from '@supabase/supabase-js';
 import { Resend } from 'resend';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
-
 // Dominios desechables conocidos
 const DISPOSABLE_DOMAINS = new Set([
   'mailinator.com','yopmail.com','tempmail.com','guerrillamail.com','throwaway.email',
@@ -193,6 +188,10 @@ function buildEmailHtml(data: {
 }
 
 export async function POST(req: Request) {
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
   try {
     const body = await req.json();
     const { email, property_name, estado, hero_mensual, score, report_id } = body;

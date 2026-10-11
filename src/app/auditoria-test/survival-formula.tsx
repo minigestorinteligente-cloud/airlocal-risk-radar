@@ -8,11 +8,13 @@ export function SurvivalFormula({
   margin = 11,
   baseCost = 47,
   marginOfSafety = 11,
+  displayCode = 'USD',
 }: {
   breakEven?: number;
   margin?: number;
   baseCost?: number;
   marginOfSafety?: number;
+  displayCode?: string;
 }) {
   const ms = Number(marginOfSafety) || 0;
   const mCol = Number(margin) || 0;
@@ -105,10 +107,10 @@ export function SurvivalFormula({
           </div>
           <div className="ml-auto flex items-baseline gap-1 pt-1 shrink-0">
             <span className="font-sans text-4xl font-black text-white tracking-tighter leading-none select-none">
-              ${baseCost}
+              {Math.round(Number(baseCost)).toLocaleString('en-US')}
             </span>
             <span className="text-[9px] font-bold text-neutral-500 uppercase select-none">
-              USD
+              {displayCode}
             </span>
           </div>
         </div>

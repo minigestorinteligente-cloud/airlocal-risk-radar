@@ -59,7 +59,8 @@ export function LeakDonut({
   tusCostosPct   = [33, 30, 15, 11, 7, 4],
   labels         = ["Comisiones", "Limpieza", "Servicios", "Mantenimiento", "Impuestos", "Otros"],
   actualCosts,
-}: Pick<SharedProps, 'tusCostosPct' | 'labels'> & { actualCosts?: number[] }) {
+  displayCode    = 'USD',
+}: Pick<SharedProps, 'tusCostosPct' | 'labels'> & { actualCosts?: number[]; displayCode?: string }) {
   const [hover, setHover] = useState<number | null>(null);
   const { CX, R, SW, C, segs } = calcSegs(tusCostosPct, labels);
   const centerV = hover != null ? `${Math.round(tusCostosPct[hover] || 0)}%` : '100%';
@@ -101,7 +102,7 @@ export function LeakDonut({
                 <span className="flex-1 text-[14px] text-zinc-300">{s.label}</span>
                 <span className="text-[15px] font-bold text-white tabular-nums shrink-0">{s.pct}%</span>
                 {actualCosts?.[s.i] != null && (
-                  <span className="text-[12px] text-zinc-500 tabular-nums shrink-0">·&nbsp;${Math.round(actualCosts[s.i]).toLocaleString()}</span>
+                  <span className="text-[12px] text-zinc-500 tabular-nums shrink-0">·&nbsp;{displayCode} {Math.round(actualCosts[s.i]).toLocaleString('en-US')}</span>
                 )}
               </div>
             );
