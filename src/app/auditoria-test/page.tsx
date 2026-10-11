@@ -691,10 +691,10 @@ function AuditoriaFormContent() {
   }, [searchParams]);
 
   // CARGA DIRECTA POR ASSESSMENT CODE — ?code=AL-2026-XXXX (link del WA de Forja)
+  // Usa [] para ejecutar UNA sola vez al montar en el cliente, donde window ya tiene la URL real.
   useEffect(() => {
-    const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
-    const code = searchParams.get('code') || urlParams?.get('code') || '';
-    const sharedId = searchParams.get('shared_id') || urlParams?.get('shared_id') || '';
+    const code = new URLSearchParams(window.location.search).get('code') || '';
+    const sharedId = new URLSearchParams(window.location.search).get('shared_id') || '';
     if (!code || sharedId) return;
 
     setCurrentStep(4);
@@ -718,7 +718,7 @@ function AuditoriaFormContent() {
       })
       .catch(() => setErrorMessage('No se encontró el reporte. Verifica el link.'))
       .finally(() => setIsFetchingReport(false));
-  }, [searchParams]);
+  }, []);
 
   // MANEJO DE CAMBIOS E INTERACCIONES EN INPUTS (Limpieza de 0 inicial y soporte de strings vacíos)
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
