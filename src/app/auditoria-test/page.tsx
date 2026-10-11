@@ -316,6 +316,7 @@ function LoadingSkeleton() {
 
 function AuditoriaFormContent() {
   const searchParams = useSearchParams();
+  const whatsappRef = searchParams.get('ref') || '';
 
   // CONTROL DE PASOS (1: ID, 2: Operación, 3: Costos, 4: Entorno, 5: Resultados Blur)
   const [currentStep, setCurrentStep] = useState(() => {
@@ -357,7 +358,7 @@ function AuditoriaFormContent() {
   const [checkoutError, setCheckoutError] = useState('');
   const [isRetryingReport, setIsRetryingReport] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
-  const [userCurrency, setUserCurrency] = useState({ currency: 'USD', symbol: '$', name: 'US Dollar', rate: 1, country: 'US', countryName: '', exampleCity: 'Miami' });
+  const [userCurrency, setUserCurrency] = useState({ currency: 'USD', symbol: '$', name: 'US Dollar', rate: 1, country: 'US', countryName: '', exampleCity: 'Miami', displayCode: 'USD' });
 
   interface FormDataState {
     property_name: string;
@@ -683,6 +684,34 @@ function AuditoriaFormContent() {
       .finally(() => { setIsFetchingReport(false); });
   }, [searchParams]);
 
+  // CARGA DIRECTA POR ASSESSMENT CODE — ?code=AL-2026-XXXX (link del WA de Forja)
+  useEffect(() => {
+    const code = searchParams.get('code');
+    if (!code || searchParams.get('shared_id')) return;
+
+    setCurrentStep(4);
+    setIsFetchingReport(true);
+
+    fetch(`/api/report/by-code?code=${encodeURIComponent(code)}`)
+      .then(res => res.ok ? res.json() : Promise.reject())
+      .then((data: any) => {
+        let parsedObj = { ...data };
+        try {
+          if (parsedObj.report_data) {
+            let raw = parsedObj.report_data;
+            if (typeof raw === 'string') raw = JSON.parse(raw);
+            if (typeof raw === 'string') raw = JSON.parse(raw);
+            parsedObj.report_data = raw;
+          }
+        } catch (e) { /* already parsed */ }
+        setN8nReport(parsedObj);
+        setShowPlaceholderForm(false);
+        if (parsedObj.report_level === 'premium') setIsUnlocked(true);
+      })
+      .catch(() => setErrorMessage('No se encontró el reporte. Verifica el link.'))
+      .finally(() => setIsFetchingReport(false));
+  }, [searchParams]);
+
   // MANEJO DE CAMBIOS E INTERACCIONES EN INPUTS (Limpieza de 0 inicial y soporte de strings vacíos)
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
@@ -893,7 +922,8 @@ function AuditoriaFormContent() {
       no_major_risk: String(fd.no_major_risk),
       email: String(finalEmail),
       assessment_code: String(assessmentCode),
-      uuid: String(reportUuid)
+      uuid: String(reportUuid),
+      ...(whatsappRef ? { whatsapp_ref: whatsappRef } : {})
     };
 
     console.log("PAYLOAD WEBHOOK ENVIADO A N8N PARA ETAPA 2 (PREMIUM):", payload);
@@ -1180,7 +1210,8 @@ function AuditoriaFormContent() {
       stability_perception: String(formData.stability_perception),
       risk_perception: String(formData.risk_perception),
       no_major_risk: String(formData.no_major_risk),
-      email: String(finalEmail)
+      email: String(finalEmail),
+      ...(whatsappRef ? { whatsapp_ref: whatsappRef } : {})
     };
 
     console.log("PAYLOAD WEBHOOK ENVIADO A N8N DESDE PASO 4 (URL-ENCODED):", payload);
@@ -2140,9 +2171,14 @@ function AuditoriaFormContent() {
                   <span className="text-[9px] text-zinc-500 font-extrabold uppercase tracking-wider">
                     Escenario What If
                   </span>
-                  <p className="text-xs text-neutral-400 leading-relaxed font-semibold italic">
-                    "{lane.what_if}"
-                  </p>
+                  <p className="text-xs text-neutral-400 leading-relaxed font-semibold italic"
+                    dangerouslySetInnerHTML={{ __html: `"${String(lane.what_if)
+                      .replace(/(\+?)\$\+?([\d,]+(?:\.\d+)?)\s*USD/g, (_: string, prefix: string, amt: string) => {
+                        if (userCurrency.currency === 'USD') return `${prefix}$${amt} USD`;
+                        const num = Math.round(Number(amt.replace(/,/g, '')) * userCurrency.rate);
+                        return `${prefix}${userCurrency.displayCode} ${num.toLocaleString('en-US')}`;
+                      })}"` }}
+                  />
                 </div>
               )}
             </div>
@@ -2159,16 +2195,16 @@ function AuditoriaFormContent() {
                     <div className="flex items-baseline gap-1.5">
                       <span className="text-3xl font-black text-[#00D1B2] tracking-tight">
                         {typeof lane.impacto_mensual === 'number'
-                          ? `+$${lane.impacto_mensual.toLocaleString()}`
+                          ? `+${userCurrency.displayCode} ${Math.round(lane.impacto_mensual * userCurrency.rate).toLocaleString('en-US')}`
                           : lane.impacto_mensual}
                       </span>
                       <span className="text-xs font-bold text-white uppercase tracking-wider">
-                        USD/mes
+                        /mes
                       </span>
                     </div>
                   </div>
                 )}
-                
+
                 {lane.impacto_anual !== undefined && (
                   <div className="flex flex-col">
                     <span className="text-[10px] text-zinc-500 font-extrabold uppercase tracking-wider mb-1">
@@ -2177,11 +2213,11 @@ function AuditoriaFormContent() {
                     <div className="flex items-baseline gap-1.5">
                       <span className="text-3xl font-black text-[#00D1B2] tracking-tight">
                         {typeof lane.impacto_anual === 'number'
-                          ? `+$${lane.impacto_anual.toLocaleString()}`
+                          ? `+${userCurrency.displayCode} ${Math.round(lane.impacto_anual * userCurrency.rate).toLocaleString('en-US')}`
                           : lane.impacto_anual}
                       </span>
                       <span className="text-xs font-bold text-white uppercase tracking-wider">
-                        USD/año
+                        /año
                       </span>
                     </div>
                   </div>
@@ -2257,9 +2293,14 @@ function AuditoriaFormContent() {
                   <span className="text-[9px] text-zinc-500 font-extrabold uppercase tracking-wider">
                     Escenario What If
                   </span>
-                  <p className="text-xs text-neutral-400 leading-relaxed font-semibold italic">
-                    "{lane.what_if}"
-                  </p>
+                  <p className="text-xs text-neutral-400 leading-relaxed font-semibold italic"
+                    dangerouslySetInnerHTML={{ __html: `"${String(lane.what_if)
+                      .replace(/(\+?)\$\+?([\d,]+(?:\.\d+)?)\s*USD/g, (_: string, prefix: string, amt: string) => {
+                        if (userCurrency.currency === 'USD') return `${prefix}$${amt} USD`;
+                        const num = Math.round(Number(amt.replace(/,/g, '')) * userCurrency.rate);
+                        return `${prefix}${userCurrency.displayCode} ${num.toLocaleString('en-US')}`;
+                      })}"` }}
+                  />
                 </div>
               )}
             </div>
@@ -2276,11 +2317,11 @@ function AuditoriaFormContent() {
                     <div className="flex items-baseline gap-1.5">
                       <span className="text-3xl font-black text-[#00D1B2] tracking-tight">
                         {typeof lane.impacto_mensual === 'number'
-                          ? `+$${lane.impacto_mensual.toLocaleString()}`
+                          ? `+${userCurrency.displayCode} ${Math.round(lane.impacto_mensual * userCurrency.rate).toLocaleString('en-US')}`
                           : lane.impacto_mensual}
                       </span>
                       <span className="text-xs font-bold text-white uppercase tracking-wider">
-                        USD/mes
+                        /mes
                       </span>
                     </div>
                   </div>
@@ -2294,11 +2335,11 @@ function AuditoriaFormContent() {
                     <div className="flex items-baseline gap-1.5">
                       <span className="text-3xl font-black text-[#00D1B2] tracking-tight">
                         {typeof lane.impacto_anual === 'number'
-                          ? `+$${lane.impacto_anual.toLocaleString()}`
+                          ? `+${userCurrency.displayCode} ${Math.round(lane.impacto_anual * userCurrency.rate).toLocaleString('en-US')}`
                           : lane.impacto_anual}
                       </span>
                       <span className="text-xs font-bold text-white uppercase tracking-wider">
-                        USD/año
+                        /año
                       </span>
                     </div>
                   </div>
@@ -2678,7 +2719,7 @@ function AuditoriaFormContent() {
                 <div className="flex flex-col">
                   <div className="text-2xl font-black text-white flex items-baseline gap-1">
                     <AnimatedNumber value={Math.round(Number(activeReport.free?.metrics?.avg_nightly_income || 0) * userCurrency.rate)} />
-                    <span className="text-[10px] uppercase font-bold text-zinc-500 ml-1 tracking-tighter">{userCurrency.currency}/noche</span>
+                    <span className="text-[10px] uppercase font-bold text-zinc-500 ml-1 tracking-tighter">{userCurrency.displayCode}/noche</span>
                   </div>
                   <div className="text-[10px] text-zinc-500 font-medium mt-1">Tarifa promedio diaria</div>
                 </div>
@@ -2711,10 +2752,10 @@ function AuditoriaFormContent() {
                     className="text-zinc-400 text-sm leading-relaxed mb-6 font-medium"
                     dangerouslySetInnerHTML={{ __html: ((hasN8nData ? activeReportObj?.free?.impact_text : productionJson.free?.impact_text) || narrative.desc)
                       .replace(/text-\[#[0-9A-Fa-f]{3,6}\]/g, narrative.accentText)
-                      .replace(/\$\+?([\d,]+(?:\.\d+)?)\s*USD/g, (_: string, amt: string) => {
-                        if (userCurrency.currency === 'USD') return `$${amt} USD`;
+                      .replace(/(\+?)\$\+?([\d,]+(?:\.\d+)?)\s*USD/g, (_: string, prefix: string, amt: string) => {
+                        if (userCurrency.currency === 'USD') return `${prefix}$${amt} USD`;
                         const num = Math.round(Number(amt.replace(/,/g, '')) * userCurrency.rate);
-                        return `${userCurrency.currency} ${num.toLocaleString('en-US')}`;
+                        return `${prefix}${userCurrency.displayCode} ${num.toLocaleString('en-US')}`;
                       })
                     }}
                   />
@@ -2749,9 +2790,9 @@ function AuditoriaFormContent() {
                     Potencial Económico Identificado:{" "}
                     <>
                       <span className={`font-black ${narrative.accentText}`}>
-                        +{formattedHeroMensual} {userCurrency.currency}/mes
+                        +{formattedHeroMensual} {userCurrency.displayCode}/mes
                       </span>{" "}
-                      (+{formattedHeroAnual} {userCurrency.currency}/año)
+                      (+{formattedHeroAnual} {userCurrency.displayCode}/año)
                     </>
                   </div>
                 </div>
@@ -2841,7 +2882,7 @@ function AuditoriaFormContent() {
                     </div>
                     {/* Ingreso Mensual */}
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Ingreso mensual ({userCurrency.currency})</label>
+                      <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Ingreso mensual ({userCurrency.displayCode})</label>
                       <input
                         type="number"
                         name="gross_income"
@@ -2877,7 +2918,7 @@ function AuditoriaFormContent() {
                     </div>
                     {/* Gastos Aproximados */}
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Gastos aproximados ({userCurrency.currency})</label>
+                      <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Gastos aproximados ({userCurrency.displayCode})</label>
                       <input
                         type="number"
                         name="approximate_expenses"
@@ -2920,7 +2961,7 @@ function AuditoriaFormContent() {
                     {/* Comisión OTA */}
                     <div className="flex flex-col gap-2">
                       <label htmlFor="platfom_commission_premium" className="text-xs font-bold uppercase tracking-wider text-zinc-400 font-semibold">
-                        Comisión OTA / Plataformas ({userCurrency.currency})
+                        Comisión OTA / Plataformas ({userCurrency.displayCode})
                       </label>
                       <input 
                         type="number"
@@ -2935,7 +2976,7 @@ function AuditoriaFormContent() {
                     {/* Limpieza */}
                     <div className="flex flex-col gap-2">
                       <label htmlFor="cleaning_cost_premium" className="text-xs font-bold uppercase tracking-wider text-zinc-400 font-semibold">
-                        Limpieza Total ({userCurrency.currency})
+                        Limpieza Total ({userCurrency.displayCode})
                       </label>
                       <input 
                         type="number"
@@ -2950,7 +2991,7 @@ function AuditoriaFormContent() {
                     {/* Servicios */}
                     <div className="flex flex-col gap-2">
                       <label htmlFor="services_cost_premium" className="text-xs font-bold uppercase tracking-wider text-zinc-400 font-semibold">
-                        Servicios Básicos / Gas / Luz ({userCurrency.currency})
+                        Servicios Básicos / Gas / Luz ({userCurrency.displayCode})
                       </label>
                       <input 
                         type="number"
@@ -2965,7 +3006,7 @@ function AuditoriaFormContent() {
                     {/* Mantenimiento */}
                     <div className="flex flex-col gap-2">
                       <label htmlFor="maintenence_cost_premium" className="text-xs font-bold uppercase tracking-wider text-zinc-400 font-semibold">
-                        Mantenimiento / Reparaciones ({userCurrency.currency})
+                        Mantenimiento / Reparaciones ({userCurrency.displayCode})
                       </label>
                       <input 
                         type="number"
@@ -2980,7 +3021,7 @@ function AuditoriaFormContent() {
                     {/* Impuestos */}
                     <div className="flex flex-col gap-2">
                       <label htmlFor="tax_cost_premium" className="text-xs font-bold uppercase tracking-wider text-zinc-400 font-semibold">
-                        Impuestos y Licencias ({userCurrency.currency})
+                        Impuestos y Licencias ({userCurrency.displayCode})
                       </label>
                       <input 
                         type="number"
@@ -2995,7 +3036,7 @@ function AuditoriaFormContent() {
                     {/* Otros Gastos */}
                     <div className="flex flex-col gap-2">
                       <label htmlFor="Hidden_cost_premium" className="text-xs font-bold uppercase tracking-wider text-zinc-400 font-semibold">
-                        Otros Gastos Ocultos ({userCurrency.currency})
+                        Otros Gastos Ocultos ({userCurrency.displayCode})
                       </label>
                       <input 
                         type="number"
@@ -3155,7 +3196,7 @@ function AuditoriaFormContent() {
                 const totalAnual = Math.round((activeReport.guardian_conclusion?.kpis?.impacto_anual_detectado ?? 0) * userCurrency.rate);
                 const isZeroImpact = impactoRawUSD === 0 && riskLevel === 'LOW';
 
-                const currCode = userCurrency.currency;
+                const currCode = userCurrency.displayCode;
                 const formatOpportunity = (val: any, defaultSuffix: string) => {
                   if (val === undefined || val === null) return `+0 ${defaultSuffix}`;
                   const str = String(val);
@@ -3371,9 +3412,15 @@ function AuditoriaFormContent() {
                               {activeReport.guardian_conclusion?.nota_transicion && !isZeroImpact && (
                                 <div className="w-full text-left pt-6 mt-6 border-t border-white/[0.03] flex items-start gap-2 text-zinc-400">
                                   <CheckCircle2 className="w-4 h-4 text-zinc-500 shrink-0 mt-0.5" />
-                                  <p className="text-xs md:text-sm leading-relaxed font-medium">
-                                    {activeReport.guardian_conclusion.nota_transicion}
-                                  </p>
+                                  <p className="text-xs md:text-sm leading-relaxed font-medium"
+                                    dangerouslySetInnerHTML={{ __html: activeReport.guardian_conclusion.nota_transicion
+                                      .replace(/(\+?)\$\+?([\d,]+(?:\.\d+)?)\s*USD/g, (_: string, prefix: string, amt: string) => {
+                                        if (userCurrency.currency === 'USD') return `${prefix}$${amt} USD`;
+                                        const num = Math.round(Number(amt.replace(/,/g, '')) * userCurrency.rate);
+                                        return `${prefix}${userCurrency.displayCode} ${num.toLocaleString('en-US')}`;
+                                      })
+                                    }}
+                                  />
                                 </div>
                               )}
 
@@ -3401,9 +3448,9 @@ function AuditoriaFormContent() {
                 {activeReport.datos_entrada && (
                   <div className="mb-6 flex flex-wrap gap-4 px-1">
                     {[
-                      { label: 'Facturación bruta', value: `$${Number(activeReport.datos_entrada.gross_income).toLocaleString()}` },
-                      { label: 'Costos totales', value: `$${Number(activeReport.datos_entrada.total_costs).toLocaleString()}` },
-                      { label: 'Ingreso neto', value: `$${Number(activeReport.datos_entrada.net_income).toLocaleString()}` },
+                      { label: 'Facturación bruta', value: `${userCurrency.displayCode} ${Math.round(Number(activeReport.datos_entrada.gross_income) * userCurrency.rate).toLocaleString('en-US')}` },
+                      { label: 'Costos totales', value: `${userCurrency.displayCode} ${Math.round(Number(activeReport.datos_entrada.total_costs) * userCurrency.rate).toLocaleString('en-US')}` },
+                      { label: 'Ingreso neto', value: `${userCurrency.displayCode} ${Math.round(Number(activeReport.datos_entrada.net_income) * userCurrency.rate).toLocaleString('en-US')}` },
                       { label: 'Noches vendidas', value: `${activeReport.datos_entrada.occupied_nights}` },
                     ].map(item => (
                       <div key={item.label} className="flex flex-col gap-0.5">
@@ -3427,11 +3474,11 @@ function AuditoriaFormContent() {
                       <div className="flex gap-6 flex-wrap">
                         <div className="flex flex-col gap-0.5">
                           <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Tu ADR</span>
-                          <span className="text-lg font-black text-white tabular-nums">${pp.adr_usuario}</span>
+                          <span className="text-lg font-black text-white tabular-nums">{userCurrency.displayCode} {Math.round(Number(pp.adr_usuario) * userCurrency.rate).toLocaleString('en-US')}</span>
                         </div>
                         <div className="flex flex-col gap-0.5">
                           <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">ADR Zona</span>
-                          <span className="text-lg font-black tabular-nums" style={{ color }}>${pp.adr_mercado}</span>
+                          <span className="text-lg font-black tabular-nums" style={{ color }}>{userCurrency.displayCode} {Math.round(Number(pp.adr_mercado) * userCurrency.rate).toLocaleString('en-US')}</span>
                         </div>
                         <div className="flex flex-col gap-0.5">
                           <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Gap</span>
@@ -3442,7 +3489,7 @@ function AuditoriaFormContent() {
                         {isBajo && pp.potencial_mensual > 0 && (
                           <div className="flex flex-col gap-0.5">
                             <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Potencial precio</span>
-                            <span className="text-lg font-black tabular-nums" style={{ color }}>+${pp.potencial_mensual.toLocaleString()}/mes</span>
+                            <span className="text-lg font-black tabular-nums" style={{ color }}>+{userCurrency.displayCode} {Math.round(Number(pp.potencial_mensual) * userCurrency.rate).toLocaleString('en-US')}/mes</span>
                           </div>
                         )}
                       </div>
@@ -3454,7 +3501,8 @@ function AuditoriaFormContent() {
                 <SurvivalFormula
                   breakEven={activeBreakEven}
                   margin={activeMargin}
-                  baseCost={activeBaseCostPerNight}
+                  baseCost={Math.round(activeBaseCostPerNight * userCurrency.rate)}
+                  displayCode={userCurrency.displayCode}
                   marginOfSafety={activeReport.cabecera?.margin_of_safety ?? activeReport.free?.metrics?.margin_of_safety ?? activeMargin}
                 />
 
@@ -3478,7 +3526,7 @@ function AuditoriaFormContent() {
                               EXPENSE RATIO
                             </span>
                             <p className="mt-1 text-[10px] leading-normal text-neutral-500 font-medium">
-                              Por cada $100 que ingresas, <strong style={{ color: erColor }}>${erFactor}</strong> van en costos operativos.
+                              Por cada {userCurrency.displayCode} 100 que ingresas, <strong style={{ color: erColor }}>{userCurrency.displayCode} {erFactor}</strong> van en costos operativos.
                             </p>
                           </div>
                         </div>
@@ -3509,10 +3557,10 @@ function AuditoriaFormContent() {
                     </div>
                     <div className="ml-auto flex items-baseline gap-1 pt-1 shrink-0">
                       <span className="font-sans text-4xl font-black text-white tracking-tighter leading-none select-none">
-                        ${Math.round(activeNetIncome).toLocaleString()}
+                        {Math.round(activeNetIncome * userCurrency.rate).toLocaleString('en-US')}
                       </span>
-                      <span className="text-[9px] font-bold text-[#0B0C10] uppercase select-none">
-                        USD
+                      <span className="text-[9px] font-bold text-neutral-500 uppercase select-none">
+                        {userCurrency.displayCode}
                       </span>
                     </div>
                   </div>
@@ -3565,7 +3613,10 @@ function AuditoriaFormContent() {
                           <LeakDonut
                             tusCostosPct={radar?.tus_costos_pct}
                             labels={radar?.labels}
-                            actualCosts={[commissionVal, cleaningVal, servicesVal, maintenanceVal, taxVal, hiddenVal]}
+                            actualCosts={hasN8nData
+                              ? [commissionVal, cleaningVal, servicesVal, maintenanceVal, taxVal, hiddenVal].map(v => Math.round(v * userCurrency.rate))
+                              : [commissionVal, cleaningVal, servicesVal, maintenanceVal, taxVal, hiddenVal]}
+                            displayCode={userCurrency.displayCode}
                           />
                         </div>
 
@@ -3575,9 +3626,15 @@ function AuditoriaFormContent() {
                             CONTEXTO OPERATIVO
                           </span>
                           <div className="p-4 rounded-xl bg-white/[0.02] border border-white/5">
-                            <p className="text-neutral-300 text-xs md:text-sm font-semibold leading-relaxed">
-                              {cazafugas?.leak_analysis_contexto?.contribucion}
-                            </p>
+                            <p className="text-neutral-300 text-xs md:text-sm font-semibold leading-relaxed"
+                              dangerouslySetInnerHTML={{ __html: (cazafugas?.leak_analysis_contexto?.contribucion || '')
+                                .replace(/(\+?)\$\+?([\d,]+(?:\.\d+)?)\s*USD/g, (_: string, prefix: string, amt: string) => {
+                                  if (userCurrency.currency === 'USD') return `${prefix}$${amt} USD`;
+                                  const num = Math.round(Number(amt.replace(/,/g, '')) * userCurrency.rate);
+                                  return `${prefix}${userCurrency.displayCode} ${num.toLocaleString('en-US')}`;
+                                })
+                              }}
+                            />
                           </div>
                         </div>
 
@@ -3818,13 +3875,13 @@ function AuditoriaFormContent() {
                       <div className="flex flex-col items-end shrink-0">
                         <span className="text-2xl md:text-3xl font-black text-[#00D1B2] tabular-nums leading-none">
                           {grandTotal > 0
-                            ? `+${grandTotal.toLocaleString('en-US')} ${userCurrency.currency}/mes`
+                            ? `+${grandTotal.toLocaleString('en-US')} ${userCurrency.displayCode}/mes`
                             : riskLevel === 'LOW'
                               ? 'Sin fugas confirmadas'
-                              : `0 ${userCurrency.currency}/mes`}
+                              : `0 ${userCurrency.displayCode}/mes`}
                         </span>
                         {grandTotal > 0 && (
-                          <span className="text-xs font-bold text-zinc-500 mt-0.5">+{(grandTotal * 12).toLocaleString('en-US')} {userCurrency.currency}/año</span>
+                          <span className="text-xs font-bold text-zinc-500 mt-0.5">+{(grandTotal * 12).toLocaleString('en-US')} {userCurrency.displayCode}/año</span>
                         )}
                       </div>
                     </div>
@@ -4185,10 +4242,10 @@ function AuditoriaFormContent() {
                   {/* Ingreso Mensual */}
                   <div className="flex flex-col gap-2 bg-[#18181A] p-4 rounded-xl border border-white/5">
                     <label htmlFor="gross_income" className="text-xs font-bold uppercase tracking-wider text-[#00D1B2]">
-                      INGRESO MENSUAL ESTIMADO ({userCurrency.currency})
+                      INGRESO MENSUAL ESTIMADO ({userCurrency.displayCode})
                     </label>
                     <div className="relative flex items-center mt-1">
-                      <span className="absolute left-3 text-zinc-500 font-bold text-xs tracking-tight">{userCurrency.currency}</span>
+                      <span className="absolute left-3 text-zinc-500 font-bold text-xs tracking-tight">{userCurrency.displayCode}</span>
                       <input
                         type="number"
                         id="gross_income"
@@ -4207,10 +4264,10 @@ function AuditoriaFormContent() {
                   {/* Gastos Aproximados */}
                   <div className="flex flex-col gap-2 bg-[#18181A] p-4 rounded-xl border border-white/5">
                     <label htmlFor="approximate_expenses" className="text-xs font-bold uppercase tracking-wider text-[#00D1B2]">
-                      GASTOS OPERATIVOS APROXIMADOS ({userCurrency.currency})
+                      GASTOS OPERATIVOS APROXIMADOS ({userCurrency.displayCode})
                     </label>
                     <div className="relative flex items-center mt-1">
-                      <span className="absolute left-3 text-zinc-500 font-bold text-xs tracking-tight">{userCurrency.currency}</span>
+                      <span className="absolute left-3 text-zinc-500 font-bold text-xs tracking-tight">{userCurrency.displayCode}</span>
                       <input
                         type="number"
                         id="approximate_expenses"
@@ -4232,6 +4289,7 @@ function AuditoriaFormContent() {
                       ¿Precio promedio por noche en tu zona?
                     </label>
                     <div className="relative flex items-center mt-1">
+                      <span className="absolute left-3 text-zinc-500 font-bold text-xs tracking-tight">{userCurrency.displayCode}</span>
                       <input
                         type="number"
                         id="competitive_adr"
@@ -4241,7 +4299,7 @@ function AuditoriaFormContent() {
                         value={formData.competitive_adr}
                         onChange={handleInputChange}
                         onFocus={handleInputFocus}
-                        className="w-full bg-[#0B0B0C] border border-white/10 rounded-lg px-4 py-3 text-base text-white focus:outline-none focus:border-[#00D1B2] transition-all font-mono"
+                        className="w-full bg-[#0B0B0C] border border-white/10 rounded-lg pl-14 pr-4 py-3 text-base text-white focus:outline-none focus:border-[#00D1B2] transition-all font-mono"
                       />
                     </div>
                     <div className="mt-2 flex items-start gap-2 rounded-lg bg-[#F0B432]/10 border border-[#F0B432]/20 px-3 py-2">
