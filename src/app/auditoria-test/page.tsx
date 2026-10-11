@@ -2,7 +2,7 @@
 
 import { Suspense, useState, useEffect, Fragment } from 'react';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { AlertTriangle, TrendingUp, CheckCircle2, Clock, DollarSign, BarChart3, RefreshCw, Target, Search, ClipboardCheck, Coins, Lock } from 'lucide-react';
 import { Manrope, Inter } from 'next/font/google';
 import AnimatedNumber from '../../components/AnimatedNumber';
@@ -316,6 +316,7 @@ function LoadingSkeleton() {
 
 function AuditoriaFormContent() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const whatsappRef = searchParams.get('ref') || '';
 
   // CONTROL DE PASOS (1: ID, 2: Operación, 3: Costos, 4: Entorno, 5: Resultados Blur)
@@ -323,7 +324,6 @@ function AuditoriaFormContent() {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
       if (params.get('status') || params.get('report_id')) return 4;
-      if (params.get('code')) return 4;
       if (params.has('iniciar')) return 1;
     }
     return 0;
@@ -331,12 +331,7 @@ function AuditoriaFormContent() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [n8nReport, setN8nReport] = useState<any>(null);
-  const [isFetchingReport, setIsFetchingReport] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return !!new URLSearchParams(window.location.search).get('code');
-    }
-    return false;
-  });
+  const [isFetchingReport, setIsFetchingReport] = useState(false);
 
   // Comunica el paso actual al body para que el CSS pueda mostrar/ocultar el sweep
   useEffect(() => {
@@ -691,33 +686,23 @@ function AuditoriaFormContent() {
   }, [searchParams]);
 
   // CARGA DIRECTA POR ASSESSMENT CODE — ?code=AL-2026-XXXX (link del WA de Forja)
-  // Usa [] para ejecutar UNA sola vez al montar en el cliente, donde window ya tiene la URL real.
+  // Convierte el code a shared_id y hace router.replace para que el effect de
+  // shared_id (que ya funciona) tome el control y cargue el reporte.
   useEffect(() => {
     const code = new URLSearchParams(window.location.search).get('code') || '';
     const sharedId = new URLSearchParams(window.location.search).get('shared_id') || '';
     if (!code || sharedId) return;
 
-    setCurrentStep(4);
-    setIsFetchingReport(true);
-
     fetch(`/api/report/by-code?code=${encodeURIComponent(code)}`)
       .then(res => res.ok ? res.json() : Promise.reject())
       .then((data: any) => {
-        let parsedObj = { ...data };
-        try {
-          if (parsedObj.report_data) {
-            let raw = parsedObj.report_data;
-            if (typeof raw === 'string') raw = JSON.parse(raw);
-            if (typeof raw === 'string') raw = JSON.parse(raw);
-            parsedObj.report_data = raw;
-          }
-        } catch (e) { /* already parsed */ }
-        setN8nReport(parsedObj);
-        setShowPlaceholderForm(false);
-        if (parsedObj.report_level === 'premium') setIsUnlocked(true);
+        if (data.id) {
+          router.replace(`/auditoria-test?shared_id=${data.id}`);
+        } else {
+          setErrorMessage('No se encontró el reporte. Verifica el link.');
+        }
       })
-      .catch(() => setErrorMessage('No se encontró el reporte. Verifica el link.'))
-      .finally(() => setIsFetchingReport(false));
+      .catch(() => setErrorMessage('No se encontró el reporte. Verifica el link.'));
   }, []);
 
   // MANEJO DE CAMBIOS E INTERACCIONES EN INPUTS (Limpieza de 0 inicial y soporte de strings vacíos)
