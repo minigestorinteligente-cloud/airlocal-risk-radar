@@ -653,7 +653,9 @@ function AuditoriaFormContent() {
         } catch (e) { /* already parsed */ }
 
         setN8nReport(parsedObj);
-        setShowPlaceholderForm(false);
+        // FREE: mostrar formulario directo (sin clic intermedio en CTA)
+        // PREMIUM: ya pagó, no mostrar el formulario de costos
+        setShowPlaceholderForm(parsedObj.report_level !== 'premium');
         if (parsedObj.report_level === 'premium') setIsUnlocked(true);
 
         // Pre-fill all form fields from input_data (original FREE submission) + report summary
@@ -683,6 +685,7 @@ function AuditoriaFormContent() {
           stability_perception: inputData.stability_perception || prev.stability_perception,
           risk_perception: inputData.risk_perception || prev.risk_perception,
           no_major_risk: inputData.no_major_risk || prev.no_major_risk,
+          approximate_expenses: inputData.approximate_expenses || prev.approximate_expenses,
           email: inputData.email || prev.email,
         }));
 
