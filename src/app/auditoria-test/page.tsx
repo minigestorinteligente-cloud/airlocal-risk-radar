@@ -656,14 +656,34 @@ function AuditoriaFormContent() {
         setShowPlaceholderForm(false);
         if (parsedObj.report_level === 'premium') setIsUnlocked(true);
 
-        // Pre-fill only the non-sensitive fields from the report
+        // Pre-fill all form fields from input_data (original FREE submission) + report summary
         const rd = parsedObj.report_data || {};
         const summary = rd.free?.user_summary || {};
         const metrics = rd.free?.metrics || {};
+        let inputData: any = {};
+        try {
+          const rawInput = parsedObj.input_data;
+          if (typeof rawInput === 'string') inputData = JSON.parse(rawInput);
+          else if (rawInput && typeof rawInput === 'object') inputData = rawInput;
+        } catch(e) {}
         setFormData(prev => ({
           ...prev,
-          property_name: summary.property_name || prev.property_name,
-          gross_income: summary.gross_income || metrics.gross_income || prev.gross_income,
+          property_name: summary.property_name || inputData.property_name || prev.property_name,
+          country: inputData.country || prev.country,
+          city: inputData.city || prev.city,
+          property_type: inputData.property_type || prev.property_type,
+          market_type: inputData.market_type || prev.market_type,
+          Max_guest: inputData.Max_guest || inputData.max_guests || prev.Max_guest,
+          max_guests: inputData.max_guests || inputData.Max_guest || prev.max_guests,
+          bedrooms: inputData.bedrooms || prev.bedrooms,
+          bathrooms: inputData.bathrooms || prev.bathrooms,
+          occupied_nights: inputData.occupied_nights || prev.occupied_nights,
+          available_nights: inputData.available_nights || prev.available_nights,
+          gross_income: summary.gross_income || metrics.gross_income || inputData.gross_income || prev.gross_income,
+          stability_perception: inputData.stability_perception || prev.stability_perception,
+          risk_perception: inputData.risk_perception || prev.risk_perception,
+          no_major_risk: inputData.no_major_risk || prev.no_major_risk,
+          email: inputData.email || prev.email,
         }));
 
         // Retorno desde Stripe: recuperar formData del localStorage y disparar el flujo premium
