@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
 
   const { data, error } = await supabase
     .from('reports')
-    .select('id, assessment_code, report_data, report_level, status, riesgo, profit, perdida_potencial, created_at, input_data')
+    .select('*')
     .eq('id', id)
     .single();
 
