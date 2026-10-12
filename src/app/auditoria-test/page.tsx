@@ -637,6 +637,9 @@ function AuditoriaFormContent() {
 
     setCurrentStep(4);
     setIsFetchingReport(true);
+    // Mostrar formulario directamente al llegar por ?shared_id= (sin CTA intermedio).
+    // Para premium se revierte en el .then cuando se confirma el report_level.
+    setShowPlaceholderForm(true);
 
     fetch(`/api/report/by-id?id=${encodeURIComponent(sharedId)}`)
       .then(res => res.ok ? res.json() : Promise.reject())
@@ -653,40 +656,52 @@ function AuditoriaFormContent() {
         } catch (e) { /* already parsed */ }
 
         setN8nReport(parsedObj);
-        // FREE: mostrar formulario directo (sin clic intermedio en CTA)
-        // PREMIUM: ya pagó, no mostrar el formulario de costos
-        setShowPlaceholderForm(parsedObj.report_level !== 'premium');
-        if (parsedObj.report_level === 'premium') setIsUnlocked(true);
+        // PREMIUM: ya pagó → ocultar formulario de costos; FREE queda en true (ya seteado arriba)
+        if (parsedObj.report_level === 'premium') {
+          setShowPlaceholderForm(false);
+          setIsUnlocked(true);
+        }
 
-        // Pre-fill all form fields from input_data (original FREE submission) + report summary
+        // Pre-fill campos desde report_data (no existe columna input_data en Supabase)
         const rd = parsedObj.report_data || {};
         const summary = rd.free?.user_summary || {};
         const metrics = rd.free?.metrics || {};
-        let inputData: any = {};
-        try {
-          const rawInput = parsedObj.input_data;
-          if (typeof rawInput === 'string') inputData = JSON.parse(rawInput);
-          else if (rawInput && typeof rawInput === 'object') inputData = rawInput;
-        } catch(e) {}
+        const metaEmail = rd.meta?.email || '';
+
+        // Parsear location "Ciudad, País"
+        const locationParts = (summary.location || '').split(', ');
+        const parsedCity = locationParts.length > 1 ? locationParts.slice(0, -1).join(', ') : locationParts[0] || '';
+        const parsedCountry = locationParts.length > 1 ? locationParts[locationParts.length - 1] : '';
+
+        // Parsear occupied_nights desde "25 noches vendidas este mes"
+        const nightsMatch = (summary.activity || '').match(/^(\d+)/);
+        const parsedOccupiedNights = nightsMatch ? nightsMatch[1] : '';
+
+        // Parsear capacity "4 huéspedes · 2 hab · 1 baños"
+        const capNumbers = (summary.capacity || '').match(/\d+/g) || [];
+        const parsedMaxGuests = capNumbers[0] || '';
+        const parsedBedrooms = capNumbers[1] || '';
+        const parsedBathrooms = capNumbers[2] || '';
+
         setFormData(prev => ({
           ...prev,
-          property_name: summary.property_name || inputData.property_name || prev.property_name,
-          country: inputData.country || prev.country,
-          city: inputData.city || prev.city,
-          property_type: inputData.property_type || prev.property_type,
-          market_type: inputData.market_type || prev.market_type,
-          Max_guest: inputData.Max_guest || inputData.max_guests || prev.Max_guest,
-          max_guests: inputData.max_guests || inputData.Max_guest || prev.max_guests,
-          bedrooms: inputData.bedrooms || prev.bedrooms,
-          bathrooms: inputData.bathrooms || prev.bathrooms,
-          occupied_nights: inputData.occupied_nights || prev.occupied_nights,
-          available_nights: inputData.available_nights || prev.available_nights,
-          gross_income: summary.gross_income || metrics.gross_income || inputData.gross_income || prev.gross_income,
-          stability_perception: inputData.stability_perception || prev.stability_perception,
-          risk_perception: inputData.risk_perception || prev.risk_perception,
-          no_major_risk: inputData.no_major_risk || prev.no_major_risk,
-          approximate_expenses: inputData.Hidden_cost || inputData.approximate_expenses || prev.approximate_expenses,
-          email: inputData.email || prev.email,
+          property_name: summary.property_name || prev.property_name,
+          country: parsedCountry || prev.country,
+          city: parsedCity || prev.city,
+          property_type: prev.property_type,
+          market_type: prev.market_type,
+          Max_guest: parsedMaxGuests || prev.Max_guest,
+          max_guests: parsedMaxGuests || prev.max_guests,
+          bedrooms: parsedBedrooms || prev.bedrooms,
+          bathrooms: parsedBathrooms || prev.bathrooms,
+          occupied_nights: parsedOccupiedNights || prev.occupied_nights,
+          available_nights: prev.available_nights,
+          gross_income: summary.gross_income || metrics.gross_income || prev.gross_income,
+          stability_perception: prev.stability_perception,
+          risk_perception: prev.risk_perception,
+          no_major_risk: prev.no_major_risk,
+          approximate_expenses: prev.approximate_expenses,
+          email: metaEmail || prev.email,
         }));
 
         // Retorno desde Stripe: recuperar formData del localStorage y disparar el flujo premium
