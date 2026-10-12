@@ -685,7 +685,7 @@ function AuditoriaFormContent() {
           stability_perception: inputData.stability_perception || prev.stability_perception,
           risk_perception: inputData.risk_perception || prev.risk_perception,
           no_major_risk: inputData.no_major_risk || prev.no_major_risk,
-          approximate_expenses: inputData.approximate_expenses || prev.approximate_expenses,
+          approximate_expenses: inputData.Hidden_cost || inputData.approximate_expenses || prev.approximate_expenses,
           email: inputData.email || prev.email,
         }));
 
